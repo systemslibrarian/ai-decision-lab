@@ -270,18 +270,19 @@
         <div class="stat-row"><span class="stat-label">Status</span><span id="status" class="stat-value status-ready" aria-live="assertive">Ready</span></div>
       </section>
 
-      <section class="panel panel-stats advanced-only">
+      <section class="panel panel-stats">
         <h3><span class="panel-icon" aria-hidden="true">📈</span> Algorithm Stats</h3>
         <p id="stats-placeholder" class="stats-placeholder">Run an algorithm to see stats here.</p>
         <div id="stats-live" class="stats-live" hidden>
+        <div class="stat-row"><span class="stat-label">Algorithm</span><span id="algorithm-name" class="stat-value" aria-live="polite">None</span></div>
         <div class="stat-row"><span class="stat-label">Explored</span><span id="nodes-explored" class="stat-value mono" aria-live="polite">0</span></div>
         <div class="stat-row"><span class="stat-label">Path length</span><span id="path-length" class="stat-value mono" aria-live="polite">0</span></div>
+        <div class="stat-row"><span class="stat-label">Total cost</span><span id="path-cost" class="stat-value mono" aria-live="polite">0</span></div>
+        <div class="stat-row"><span class="stat-label">Time</span><span id="algo-time" class="stat-value mono" aria-live="polite">—</span></div>
         <div class="stat-row"><span class="stat-label">Move distance</span><span id="move-distance" class="stat-value mono" aria-live="polite">0</span></div>
         <div class="stat-row"><span class="stat-label">Terrain surcharge</span><span id="terrain-cost" class="stat-value mono" aria-live="polite">0</span></div>
         <div class="stat-row"><span class="stat-label">Turn penalty</span><span id="turn-penalty" class="stat-value mono" aria-live="polite">0</span></div>
-        <div class="stat-row"><span class="stat-label">Total score</span><span id="path-cost" class="stat-value mono" aria-live="polite">0</span></div>
         <div class="stat-row"><span class="stat-label">Turns</span><span id="turn-count" class="stat-value mono" aria-live="polite">0</span></div>
-        <div class="stat-row"><span class="stat-label">Algorithm</span><span id="algorithm-name" class="stat-value" aria-live="polite">None</span></div>
         </div>
       </section>
 
@@ -333,7 +334,7 @@
         </dl>
       </section>
 
-      <section class="panel panel-compare advanced-only">
+      <section class="panel panel-compare">
         <h3><span class="panel-icon" aria-hidden="true">⚖️</span> Compare Algorithms</h3>
         <p class="compare-copy">Use <strong>Compare</strong> to see how different route-finding styles behave on the same map.</p>
         <div id="comparison-results" class="comparison-results" aria-live="polite">
@@ -379,6 +380,18 @@
         <span class="canvas-badge" id="gradient-badge" aria-live="polite">—</span>
       </div>
       <canvas id="gradientCanvas" width="780" height="600" aria-label="Gradient descent on a continuous surface." role="img"></canvas>
+    </div>
+
+    <!-- Optimization stats panel -->
+    <div class="opt-stats-panel" id="opt-stats-panel">
+      <div class="opt-stats-placeholder" id="opt-stats-placeholder">Run an optimization algorithm to see live feedback here.</div>
+      <div class="opt-stats-live" id="opt-stats-live" hidden>
+        <div class="opt-stats-grid" id="opt-stats-grid"></div>
+        <div class="opt-sparkline-wrap" id="opt-sparkline-wrap" hidden>
+          <span class="opt-sparkline-label">Fitness trend</span>
+          <div class="opt-sparkline" id="opt-sparkline"></div>
+        </div>
+      </div>
     </div>
 
     </div><!-- /tab-optimization -->
@@ -510,11 +523,11 @@
     <footer class="lab-footer" role="contentinfo">
       <p>
         Built by <a href="https://github.com/systemslibrarian" target="_blank" rel="noopener">Paul Clark</a>
-        &middot; <a href="https://github.com/systemslibrarian/ai-decision-lab" target="_blank" rel="noopener">View source</a>
+        &middot; <a href="https://github.com/systemslibrarian/ai-decision-lab" target="_blank" rel="noopener">View source on GitHub</a>
         &middot; <a href="https://ciphermuseum.com" target="_blank" rel="noopener">Cipher Museum</a>
       </p>
       <p class="footer-sub">
-        Demonstrating discrete search and continuous optimization in a single interactive lab.
+        Visualizing discrete search and continuous optimization in a single interactive lab.
       </p>
     </footer>
   </div>

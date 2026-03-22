@@ -843,6 +843,14 @@ canvas {
   color: var(--muted);
 }
 
+.comparison-verdict {
+  margin: 10px 0 0;
+  font-size: 13px;
+  color: var(--accent-2);
+  font-weight: 600;
+  line-height: 1.5;
+}
+
 /* How to / keyboard */
 .panel ol {
   margin: 0;
@@ -973,6 +981,73 @@ kbd {
   font-size: 13px;
   color: var(--muted);
   line-height: 1.5;
+}
+
+/* ── Optimization Stats Panel ─────────────────────────────── */
+.opt-stats-panel {
+  max-width: 820px;
+  margin: 12px auto 0;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px 20px;
+}
+.opt-stats-placeholder {
+  font-size: 13px;
+  color: var(--muted);
+  font-style: italic;
+  margin: 0;
+}
+.opt-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 6px 20px;
+}
+.opt-stat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+.opt-stat-label {
+  font-size: 12px;
+  color: var(--muted);
+}
+.opt-stat-value {
+  font-size: 13px;
+  font-weight: 600;
+  font-family: "SF Mono", "Fira Code", monospace;
+  color: var(--text);
+}
+.opt-stat-value.status-text {
+  font-family: inherit;
+  color: var(--amber);
+}
+.opt-stat-value.status-done {
+  color: var(--green);
+}
+.opt-sparkline-wrap {
+  margin-top: 10px;
+}
+.opt-sparkline-label {
+  font-size: 11px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  font-weight: 700;
+}
+.opt-sparkline {
+  display: flex;
+  align-items: flex-end;
+  gap: 1px;
+  height: 28px;
+  margin-top: 4px;
+}
+.opt-sparkline-bar {
+  flex: 1;
+  min-width: 2px;
+  background: var(--accent);
+  border-radius: 1px 1px 0 0;
+  transition: height .15s;
 }
 
 /* ── Footer ───────────────────────────────────────────────── */

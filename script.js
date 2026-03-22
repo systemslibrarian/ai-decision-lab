@@ -187,12 +187,17 @@ function setTool(name, label) {
   });
 }
 
-function updateStats({ explored = 0, pathLength = 0, moveDistance = 0, terrainCost = 0, turnPenalty = 0, pathCost = 0, turns = 0, algorithm = "None" } = {}) {
+let algoStartTime = 0;
+
+function updateStats({ explored = 0, pathLength = 0, moveDistance = 0, terrainCost = 0, turnPenalty = 0, pathCost = 0, turns = 0, algorithm = "None", timeMs = null } = {}) {
   const placeholder = $("stats-placeholder");
   const live = $("stats-live");
   if (placeholder && live && algorithm !== "None") {
     placeholder.hidden = true;
     live.hidden = false;
+  } else if (placeholder && live && algorithm === "None") {
+    placeholder.hidden = false;
+    live.hidden = true;
   }
   $("nodes-explored").textContent = explored;
   $("path-length").textContent = pathLength;
@@ -202,8 +207,24 @@ function updateStats({ explored = 0, pathLength = 0, moveDistance = 0, terrainCo
   $("path-cost").textContent = typeof pathCost === "number" ? pathCost.toFixed(2) : pathCost;
   $("turn-count").textContent = turns;
   $("algorithm-name").textContent = algorithm;
+  const timeEl = $("algo-time");
+  if (timeEl) timeEl.textContent = timeMs !== null ? timeMs + " ms" : "—";
   const badge = $("grid-algo-badge");
   if (badge) badge.textContent = algorithm === "None" ? "—" : algorithm;
+}
+
+function showStatsRunning(algorithmName) {
+  const placeholder = $("stats-placeholder");
+  const live = $("stats-live");
+  if (placeholder) { placeholder.textContent = "Running " + algorithmName + "..."; placeholder.hidden = false; }
+  if (live) live.hidden = true;
+}
+
+function showStatsNoPath(algorithmName, explored, timeMs) {
+  const placeholder = $("stats-placeholder");
+  const live = $("stats-live");
+  if (placeholder) { placeholder.textContent = "No path found — " + explored + " nodes explored in " + timeMs + " ms."; placeholder.hidden = false; }
+  if (live) live.hidden = true;
 }
 
 let pendingNudge = null;
@@ -314,6 +335,8 @@ function clearPathOnly() {
   if (isRunning) return;
   resetSearchStates(); lastPath = []; lastRawPath = [];
   updateStats(); setStatus("Path cleared."); setTeachingPanel("None"); drawGrid();
+  const placeholder = $("stats-placeholder");
+  if (placeholder) placeholder.textContent = "Run an algorithm to see stats here.";
   setComparisonResults('<p class="comparison-empty">No comparison has been run yet.</p>');
 }
 
@@ -440,6 +463,7 @@ async function animateFinalPath(cameFrom, current, algoName) {
   const path = rebuildPath(cameFrom, current);
   lastRawPath = [...path]; lastPath = [...path];
   await animateStoredPath(path);
+  const elapsedMs = Math.round(performance.now() - algoStartTime);
   const metrics = computePathMetrics(path, algoName);
   updateStats({
     explored: nodesExploredCount,
@@ -449,7 +473,8 @@ async function animateFinalPath(cameFrom, current, algoName) {
     turnPenalty: metrics.turnPenalty,
     pathCost: metrics.totalScore,
     turns: metrics.turns,
-    algorithm: algoName
+    algorithm: algoName,
+    timeMs: elapsedMs
   });
   setTeachingPanel(algoName, "A path has been reconstructed from goal back to start using parent links.");
   setStatus(algoName + " finished: path found.");
@@ -472,8 +497,10 @@ async function runGridSearch(mode) {
   resetSearchStates(); drawGrid();
   setBusy(true); nodesExploredCount = 0;
   currentAlgorithmName = mode;
+  algoStartTime = performance.now();
   setStatus("Running " + mode + "...");
   setTeachingPanel(mode);
+  showStatsRunning(mode);
   pendingBannerDone = true;
   setStatusBanner("running", "Running <strong>" + mode + "</strong> — watch the cells expand…");
 
@@ -578,6 +605,8 @@ async function runGridSearch(mode) {
       drawGrid(); await delay(12);
     }
   }
+  const noPathTime = Math.round(performance.now() - algoStartTime);
+  showStatsNoPath(mode, nodesExploredCount, noPathTime);
   setStatus(mode + " finished: no path found.");
   setTeachingPanel(mode, "The frontier has been exhausted, so no valid route exists on the current grid.");
   setStatusBanner("error", "<strong>" + mode + "</strong> could not find a path. Try removing some walls.");
@@ -900,7 +929,30 @@ async function compareAlgorithms() {
         : "Alternative tradeoff.";
     return `<tr><td>${result.algorithm}</td><td>Path found</td><td class="${exploredClass}">${result.explored}</td><td>${result.metrics.moveDistance.toFixed(2)}</td><td class="${scoreClass}">${result.metrics.totalScore.toFixed(2)}</td><td>${note}</td></tr>`;
   }).join("");
-  setComparisonResults(`<p class="comparison-caption">Same grid, same start and goal, different search policies.</p><table class="comparison-table"><thead><tr><th>Algorithm</th><th>Result</th><th>Explored</th><th>Distance</th><th>Score</th><th>Takeaway</th></tr></thead><tbody>${rows}</tbody></table>`);
+  // Generate verdict
+  let verdict = "";
+  if (foundResults.length === 0) {
+    verdict = "No algorithm could find a path on this grid.";
+  } else if (foundResults.length < results.length) {
+    const blocked = results.filter(r => !r.found).map(r => r.algorithm);
+    const found = foundResults.map(r => r.algorithm);
+    verdict = found[0] + " found a path. " + blocked.join(" and ") + " could not.";
+  } else {
+    const bestCostResult = foundResults.reduce((a, b) => a.metrics.totalScore < b.metrics.totalScore ? a : b);
+    const leastExploredResult = foundResults.reduce((a, b) => a.explored < b.explored ? a : b);
+    const costRange = Math.max(...foundResults.map(r => r.metrics.totalScore)) - Math.min(...foundResults.map(r => r.metrics.totalScore));
+    const exploredRange = Math.max(...foundResults.map(r => r.explored)) - Math.min(...foundResults.map(r => r.explored));
+    const avgExplored = foundResults.reduce((s, r) => s + r.explored, 0) / foundResults.length;
+    const avgCost = foundResults.reduce((s, r) => s + r.metrics.totalScore, 0) / foundResults.length;
+    if (exploredRange > avgExplored * 0.2) {
+      verdict = leastExploredResult.algorithm + " was most efficient \u2014 it explored fewer nodes to find the path.";
+    } else if (costRange > avgCost * 0.1) {
+      verdict = bestCostResult.algorithm + " found the cheapest path through the terrain.";
+    } else {
+      verdict = "All algorithms found equivalent paths on this grid.";
+    }
+  }
+  setComparisonResults(`<p class="comparison-caption">Same grid, same start and goal, different search policies.</p><table class="comparison-table"><thead><tr><th>Algorithm</th><th>Result</th><th>Explored</th><th>Distance</th><th>Score</th><th>Takeaway</th></tr></thead><tbody>${rows}</tbody></table><p class="comparison-verdict">${verdict}</p>`);
   setStatus("Comparison complete.");
 }
 
@@ -1108,6 +1160,43 @@ function surfaceValueAt(x, y) {
   return gradientSurface[fy][fx];
 }
 
+function updateOptStats(entries) {
+  const panel = $("opt-stats-panel");
+  const placeholder = $("opt-stats-placeholder");
+  const live = $("opt-stats-live");
+  const grid = $("opt-stats-grid");
+  if (!panel || !grid) return;
+  if (placeholder) placeholder.hidden = true;
+  if (live) live.hidden = false;
+  grid.innerHTML = entries.map(e => {
+    const cls = e.cls ? " " + e.cls : "";
+    return `<div class="opt-stat-row"><span class="opt-stat-label">${e.label}</span><span class="opt-stat-value${cls}">${e.value}</span></div>`;
+  }).join("");
+}
+
+function updateOptSparkline(values) {
+  const wrap = $("opt-sparkline-wrap");
+  const el = $("opt-sparkline");
+  if (!wrap || !el) return;
+  if (!values || values.length < 2) { wrap.hidden = true; return; }
+  wrap.hidden = false;
+  const max = Math.max(...values.map(Math.abs));
+  const scale = max > 0 ? 26 / max : 1;
+  el.innerHTML = values.map(v => {
+    const h = Math.max(2, Math.abs(v) * scale);
+    return `<div class="opt-sparkline-bar" style="height:${h}px"></div>`;
+  }).join("");
+}
+
+function resetOptStats() {
+  const placeholder = $("opt-stats-placeholder");
+  const live = $("opt-stats-live");
+  const sparkWrap = $("opt-sparkline-wrap");
+  if (placeholder) { placeholder.hidden = false; placeholder.textContent = "Run an optimization algorithm to see live feedback here."; }
+  if (live) live.hidden = true;
+  if (sparkWrap) sparkWrap.hidden = true;
+}
+
 async function runGradientDescent() {
   if (isRunning) return;
   setBusy(true); setStatus("Running Gradient Descent...");
@@ -1117,15 +1206,50 @@ async function runGradientDescent() {
     y: Math.floor(Math.random() * (gradientCanvas.height - 40)) + 20
   };
   gradientTrace = [{ ...gradientPoint }];
-  for (let i = 0; i < 150; i++) {
+  const maxIter = 150;
+  let converged = false;
+  for (let i = 0; i < maxIter; i++) {
     const { dx, dy } = surfaceGradientAt(gradientPoint.x, gradientPoint.y);
+    const prevX = gradientPoint.x, prevY = gradientPoint.y;
     gradientPoint.x -= dx * 5; gradientPoint.y -= dy * 5;
     gradientPoint.x = Math.max(0, Math.min(gradientCanvas.width - 1, gradientPoint.x));
     gradientPoint.y = Math.max(0, Math.min(gradientCanvas.height - 1, gradientPoint.y));
     gradientTrace.push({ ...gradientPoint });
     drawSurface(); await delay(20);
+    if (i % 5 === 0 || i === maxIter - 1) {
+      const fval = surfaceValueAt(gradientPoint.x, gradientPoint.y);
+      updateOptStats([
+        { label: "Iteration", value: (i + 1) + " / " + maxIter },
+        { label: "x", value: gradientPoint.x.toFixed(1) },
+        { label: "y", value: gradientPoint.y.toFixed(1) },
+        { label: "f(x,y)", value: fval.toFixed(4) },
+        { label: "Status", value: "Running\u2026", cls: "status-text" }
+      ]);
+    }
+    if (Math.abs(gradientPoint.x - prevX) < 0.01 && Math.abs(gradientPoint.y - prevY) < 0.01) {
+      converged = true;
+      const fval = surfaceValueAt(gradientPoint.x, gradientPoint.y);
+      updateOptStats([
+        { label: "Iteration", value: (i + 1) + " / " + maxIter },
+        { label: "x", value: gradientPoint.x.toFixed(1) },
+        { label: "y", value: gradientPoint.y.toFixed(1) },
+        { label: "f(x,y)", value: fval.toFixed(4) },
+        { label: "Status", value: "Converged", cls: "status-done" }
+      ]);
+      break;
+    }
   }
-  setStatus("Gradient Descent complete (value: " + surfaceValueAt(gradientPoint.x, gradientPoint.y).toFixed(3) + ").");
+  const finalVal = surfaceValueAt(gradientPoint.x, gradientPoint.y);
+  if (!converged) {
+    updateOptStats([
+      { label: "Iteration", value: maxIter + " / " + maxIter },
+      { label: "x", value: gradientPoint.x.toFixed(1) },
+      { label: "y", value: gradientPoint.y.toFixed(1) },
+      { label: "f(x,y)", value: finalVal.toFixed(4) },
+      { label: "Status", value: "Max iterations reached", cls: "status-done" }
+    ]);
+  }
+  setStatus("Gradient Descent complete (value: " + finalVal.toFixed(3) + ").");
   setBusy(false);
 }
 
@@ -1144,9 +1268,10 @@ async function runSimulatedAnnealing() {
   let bestX = curX, bestY = curY, bestVal = curVal;
   const saTrace = [{ x: curX, y: curY }];
   let temp = 2.0;
+  const maxIter = 200;
   gradientPoint = { x: curX, y: curY };
   gradientTrace = [];
-  for (let i = 0; i < 200; i++) {
+  for (let i = 0; i < maxIter; i++) {
     temp *= 0.985;
     const angle = Math.random() * Math.PI * 2;
     const dist = Math.random() * 30 * temp + 2;
@@ -1161,9 +1286,25 @@ async function runSimulatedAnnealing() {
     saTrace.push({ x: curX, y: curY });
     gradientPoint = { x: bestX, y: bestY };
     drawSurface({ saTrace }); await delay(16);
+    if (i % 10 === 0 || i === maxIter - 1) {
+      updateOptStats([
+        { label: "Iteration", value: (i + 1) + " / " + maxIter },
+        { label: "Temperature", value: temp.toFixed(3) },
+        { label: "f(x,y)", value: curVal.toFixed(4) },
+        { label: "Best f(x,y)", value: bestVal.toFixed(4) },
+        { label: "Status", value: "Cooling\u2026", cls: "status-text" }
+      ]);
+    }
   }
   gradientPoint = { x: bestX, y: bestY };
   drawSurface({ saTrace });
+  updateOptStats([
+    { label: "Iteration", value: maxIter + " / " + maxIter },
+    { label: "Temperature", value: temp.toFixed(3) },
+    { label: "f(x,y)", value: curVal.toFixed(4) },
+    { label: "Best f(x,y)", value: bestVal.toFixed(4) },
+    { label: "Status", value: "Completed", cls: "status-done" }
+  ]);
   setStatus("Simulated Annealing done (best: " + bestVal.toFixed(3) + ", temp: " + temp.toFixed(3) + ").");
   setBusy(false);
 }
@@ -1184,12 +1325,25 @@ async function runGeneticAlgorithm() {
   }));
   pop.forEach(ind => { ind.fitness = -surfaceValueAt(ind.x, ind.y); });
   gradientTrace = [];
+  const fitnessHistory = [];
   for (let gen = 0; gen < GENS; gen++) {
     pop.sort((a, b) => b.fitness - a.fitness);
     const best = pop[0];
+    const avgFitness = pop.reduce((s, ind) => s + ind.fitness, 0) / POP;
+    fitnessHistory.push(best.fitness);
     gradientPoint = { x: best.x, y: best.y };
     drawSurface({ gaPopulation: pop, gaBest: best });
     await delay(30);
+    if (gen % 5 === 0 || gen === GENS - 1) {
+      updateOptStats([
+        { label: "Generation", value: (gen + 1) + " / " + GENS },
+        { label: "Best fitness", value: best.fitness.toFixed(4) },
+        { label: "Avg fitness", value: avgFitness.toFixed(4) },
+        { label: "Population", value: String(POP) },
+        { label: "Status", value: "Evolving\u2026", cls: "status-text" }
+      ]);
+      updateOptSparkline(fitnessHistory);
+    }
     // Selection + crossover + mutation
     const next = [pop[0], pop[1]]; // elitism
     while (next.length < POP) {
@@ -1215,7 +1369,17 @@ async function runGeneticAlgorithm() {
   }
   pop.sort((a, b) => b.fitness - a.fitness);
   gradientPoint = { x: pop[0].x, y: pop[0].y };
+  const bestFitness = pop[0].fitness;
+  const avgFitness = pop.reduce((s, ind) => s + ind.fitness, 0) / POP;
   drawSurface({ gaPopulation: pop, gaBest: pop[0] });
+  updateOptStats([
+    { label: "Generation", value: GENS + " / " + GENS },
+    { label: "Best fitness", value: bestFitness.toFixed(4) },
+    { label: "Avg fitness", value: avgFitness.toFixed(4) },
+    { label: "Population", value: String(POP) },
+    { label: "Status", value: "Completed", cls: "status-done" }
+  ]);
+  updateOptSparkline(fitnessHistory);
   setStatus("Genetic Algorithm done (best: " + surfaceValueAt(pop[0].x, pop[0].y).toFixed(3) + ", " + GENS + " generations).");
   setBusy(false);
 }
