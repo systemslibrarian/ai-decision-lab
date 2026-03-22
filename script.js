@@ -105,6 +105,17 @@ const TEACHING_NOTES = {
 
 // ═══ Helpers ═══
 function $(id) { return document.getElementById(id); }
+
+function setStatusBanner(state, msg) {
+  const banner = $("status-banner");
+  if (!banner) return;
+  const icon = $("status-banner-icon");
+  const text = $("status-banner-msg");
+  banner.className = "status-banner status-banner--" + state;
+  if (icon) icon.textContent = state === "ready" ? "💡" : state === "running" ? "⏳" : state === "done" ? "✅" : "⚠️";
+  if (text) text.innerHTML = msg;
+}
+
 function setStatus(msg) {
   const el = $("status");
   el.textContent = msg;
@@ -167,6 +178,7 @@ function resetArrayStatus() {
 
 function setTool(name, label) {
   currentTool = name;
+  cancelAutoRun();
   $("current-tool").textContent = label;
   const map = { start: "tool-start", goal: "tool-goal", wall: "tool-wall", erase: "tool-erase", weight: "tool-weight" };
   Object.entries(map).forEach(([k, id]) => {
@@ -195,6 +207,40 @@ function updateStats({ explored = 0, pathLength = 0, moveDistance = 0, terrainCo
 }
 
 let pendingNudge = null;
+let pendingBannerDone = false;
+let autoRunTimer = null;
+
+function updateReadyHint() {
+  const btn = $("run-astar");
+  if (!btn) return;
+  if (!isRunning && startNode && goalNode) {
+    btn.classList.add("run-btn--ready");
+  } else {
+    btn.classList.remove("run-btn--ready");
+  }
+}
+
+function cancelAutoRun() {
+  if (autoRunTimer) { clearTimeout(autoRunTimer); autoRunTimer = null; }
+}
+
+function startAutoRunCountdown() {
+  cancelAutoRun();
+  let seconds = 3;
+  const tick = () => {
+    if (isRunning) return;
+    if (seconds <= 0) {
+      autoRunTimer = null;
+      setStatusBanner("running", "Auto-running <strong>A*</strong>…");
+      runAStar();
+      return;
+    }
+    setStatusBanner("ready", "Running <strong>A*</strong> in <strong>" + seconds + "</strong>… Click any button to cancel.");
+    seconds--;
+    autoRunTimer = setTimeout(tick, 1000);
+  };
+  tick();
+}
 
 function showNudge(msg) {
   let el = $("nudge-toast");
@@ -211,8 +257,26 @@ function showNudge(msg) {
   el._timer = setTimeout(() => { el.classList.add("nudge-hide"); setTimeout(() => { el.hidden = true; }, 400); }, 6000);
 }
 
+function showFloatingTip(anchorId, msg) {
+  let el = $("floating-tip");
+  if (el) el.remove();
+  const anchor = $(anchorId);
+  if (!anchor) return;
+  el = document.createElement("div");
+  el.id = "floating-tip";
+  el.className = "floating-tip";
+  el.textContent = msg;
+  document.body.appendChild(el);
+  const rect = anchor.getBoundingClientRect();
+  el.style.top = (rect.top + window.scrollY - el.offsetHeight - 10) + "px";
+  el.style.left = (rect.left + window.scrollX) + "px";
+  clearTimeout(el._timer);
+  el._timer = setTimeout(() => { el.classList.add("tip-hide"); setTimeout(() => el.remove(), 300); }, 5000);
+}
+
 function setBusy(busy) {
   isRunning = busy;
+  cancelAutoRun();
   document.querySelectorAll(".toolbar button, .array-toolbar button").forEach(b => {
     b.disabled = busy;
     if (busy) b.classList.add("disabled"); else b.classList.remove("disabled");
@@ -223,6 +287,10 @@ function setBusy(busy) {
     showNudge(pendingNudge);
     pendingNudge = null;
   }
+  if (!busy && !pendingBannerDone) {
+    setStatusBanner("ready", 'Pick a <strong>Start Here</strong> demo above, or choose an algorithm below.');
+  }
+  updateReadyHint();
 }
 
 // ═══ Grid Management ═══
@@ -321,6 +389,10 @@ function applyToolAtCell(row, col) {
   }
   drawGrid();
   if (liveMode && !isRunning) runAStar();
+  // Auto-run countdown when user places goal manually
+  if (currentTool === "goal" && !isRunning) {
+    startAutoRunCountdown();
+  }
 }
 
 // ═══ Neighbors ═══
@@ -381,7 +453,15 @@ async function animateFinalPath(cameFrom, current, algoName) {
   });
   setTeachingPanel(algoName, "A path has been reconstructed from goal back to start using parent links.");
   setStatus(algoName + " finished: path found.");
+  setStatusBanner("done", "<strong>" + algoName + "</strong> found a path! Try another algorithm or move the goal.");
+  pendingBannerDone = false;
   setBusy(false);
+  completeStep(2);
+  // After first demo, point users to the algo buttons
+  if (!sessionStorage.getItem("tipShown")) {
+    sessionStorage.setItem("tipShown", "1");
+    setTimeout(() => showFloatingTip("run-bfs", "Try a different algorithm next ↓"), 800);
+  }
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -394,6 +474,8 @@ async function runGridSearch(mode) {
   currentAlgorithmName = mode;
   setStatus("Running " + mode + "...");
   setTeachingPanel(mode);
+  pendingBannerDone = true;
+  setStatusBanner("running", "Running <strong>" + mode + "</strong> — watch the cells expand…");
 
   if (mode === "DFS") {
     const stack = [startNode], visited = new Set(), cameFrom = {};
@@ -498,6 +580,8 @@ async function runGridSearch(mode) {
   }
   setStatus(mode + " finished: no path found.");
   setTeachingPanel(mode, "The frontier has been exhausted, so no valid route exists on the current grid.");
+  setStatusBanner("error", "<strong>" + mode + "</strong> could not find a path. Try removing some walls.");
+  pendingBannerDone = false;
   setBusy(false);
 }
 
@@ -601,6 +685,7 @@ function generateMaze() {
     }
   }
   drawGrid(); setStatus("Maze generated.");
+  completeStep(4);
 }
 
 function randomWalls(density) {
@@ -628,7 +713,9 @@ function setupSimpleDemo() {
 async function runSimpleDemo() {
   if (isRunning) return;
   setupSimpleDemo();
+  setStatusBanner("running", "Setting up a clean grid… <strong>A*</strong> will run automatically.");
   pendingNudge = "Now try: move the Goal to a new spot, or add walls and run Best Route again.";
+  completeStep(1);
   await delay(200);
   runAStar();
 }
@@ -638,7 +725,9 @@ async function runMazeDemo() {
   createGrid();
   generateMaze();
   setTeachingPanel("Weighted A*", "Now the smart route finder has to work around walls instead of going in a straight line.");
+  setStatusBanner("running", "Maze generated — <strong>A*</strong> will solve it now…");
   pendingNudge = "Now try: click Shortest Steps (BFS) on the same maze to see the difference.";
+  completeStep(1);
   await delay(200);
   runAStar();
 }
@@ -648,6 +737,7 @@ async function runListSearchDemo() {
   switchTab("listsearch");
   generateSearchArray();
   setTeachingPanel("Linear Search", "This demo checks each bar from left to right until it finds the red target value.");
+  setStatusBanner("running", "Switching to List Search — <strong>Linear Search</strong> starting…");
   pendingNudge = "Now try: turn on Advanced mode, then use Cut Search In Half to compare speed.";
   await delay(200);
   runLinearSearch();
@@ -816,7 +906,7 @@ async function compareAlgorithms() {
 
 // Shortcut wrappers
 function runAStar() { runGridSearch("Weighted A*"); }
-function runBFS() { runGridSearch("BFS"); }
+function runBFS() { completeStep(3); runGridSearch("BFS"); }
 function runDFS() { runGridSearch("DFS"); }
 function runUCS() { runGridSearch("UCS"); }
 function runGreedy() { runGridSearch("Greedy Best-First"); }
@@ -1139,8 +1229,8 @@ function setLiveMode(next) {
   const btn = $("live-mode");
   btn.setAttribute("aria-pressed", String(liveMode));
   const lbl = $("live-label");
-  if (lbl) lbl.textContent = "Live: " + (liveMode ? "On" : "Off");
-  setStatus(liveMode ? "Live updates are on." : "Live updates are off.");
+  if (lbl) lbl.textContent = "Animate: " + (liveMode ? "On" : "Off");
+  setStatus(liveMode ? "Auto-replan is on — move the goal and watch." : "Auto-replan is off.");
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -1203,6 +1293,7 @@ if ($("mode-toggle")) $("mode-toggle").addEventListener("click", () => {
   const on = document.body.classList.toggle("advanced-mode");
   $("mode-toggle").setAttribute("aria-pressed", on);
   $("mode-toggle").innerHTML = '<span class="btn-icon" aria-hidden="true">🧭</span> Advanced: ' + (on ? "On" : "Off");
+  showNudge(on ? "Advanced controls are now visible — explore DFS, UCS, weights, and more." : "Advanced controls hidden — only the essentials are showing.");
 });
 $("compare-mode").addEventListener("click", compareAlgorithms);
 $("live-mode").addEventListener("click", () => setLiveMode(!liveMode));
@@ -1257,9 +1348,10 @@ drawGrid();
 drawSurface();
 updateStats();
 setTool("wall", "Walls");
-setLiveMode(false);
+setLiveMode(true);
 setStatus("Ready");
 initArrayCanvas();
+updateReadyHint();
 
 // Onboarding overlay
 (function initOnboarding() {
@@ -1270,6 +1362,7 @@ initArrayCanvas();
   function dismiss() {
     overlay.hidden = true;
     sessionStorage.setItem("labVisited", "1");
+    showStepGuide();
   }
   $("onboarding-start").addEventListener("click", dismiss);
   $("onboarding-skip").addEventListener("click", dismiss);
@@ -1280,3 +1373,38 @@ initArrayCanvas();
     }
   });
 })();
+
+// Step guide
+let guideStep = 1;
+function showStepGuide() {
+  const guide = $("step-guide");
+  if (!guide) return;
+  guide.hidden = false;
+  guideStep = 1;
+  updateStepGuide();
+}
+function advanceStepGuide() {
+  if (guideStep > 4) return;
+  const items = document.querySelectorAll(".step-guide-item");
+  items.forEach(item => {
+    const s = parseInt(item.dataset.step);
+    if (s < guideStep) { item.classList.add("done"); item.classList.remove("active"); }
+    else if (s === guideStep) { item.classList.add("active"); item.classList.remove("done"); }
+    else { item.classList.remove("active", "done"); }
+  });
+}
+function updateStepGuide() { advanceStepGuide(); }
+function completeStep(n) {
+  if (n !== guideStep) return;
+  guideStep++;
+  if (guideStep > 4) {
+    const guide = $("step-guide");
+    if (guide) setTimeout(() => { guide.hidden = true; }, 2000);
+  }
+  updateStepGuide();
+}
+
+$("step-guide-close").addEventListener("click", () => {
+  const guide = $("step-guide");
+  if (guide) guide.hidden = true;
+});

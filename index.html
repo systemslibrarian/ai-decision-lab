@@ -214,10 +214,10 @@
             <svg viewBox="0 0 24 24" class="btn-icon-svg"><rect x="4" y="5" width="6" height="14" rx="1"/><rect x="14" y="5" width="6" height="14" rx="1"/></svg>
           </span> Compare
         </button>
-        <button id="live-mode" class="advanced-only" aria-pressed="false" title="Live mode: replans in real time as you drag the goal during search">
+        <button id="live-mode" class="advanced-only" aria-pressed="false" title="Auto-replan: reruns the algorithm automatically when you move the goal">
           <span class="btn-icon" aria-hidden="true">
             <svg viewBox="0 0 24 24" class="btn-icon-svg"><path d="M20 11a8 8 0 0 0-14-5"/><path d="M4 4v5h5"/><path d="M4 13a8 8 0 0 0 14 5"/><path d="M20 20v-5h-5"/></svg>
-          </span> <span id="live-label">Live: Off</span>
+          </span> <span id="live-label">Animate: On</span>
         </button>
       </div>
     </section>
@@ -253,6 +253,12 @@
       <p class="instructions">
         Place a start, a goal, and some walls — then pick an algorithm to watch it navigate.
       </p>
+
+      <!-- Status banner -->
+      <div id="status-banner" class="status-banner status-banner--ready" role="status" aria-live="polite">
+        <span id="status-banner-icon" class="status-banner-icon" aria-hidden="true">💡</span>
+        <span id="status-banner-msg">Pick a <strong>Start Here</strong> demo above, or choose an algorithm below.</span>
+      </div>
 
       <div class="split-container">
         <div class="canvas-card">
@@ -529,6 +535,28 @@
         <button id="onboarding-skip" class="onboarding-btn-secondary">Skip</button>
       </div>
     </div>
+  </div>
+
+  <!-- Step guide (non-blocking) -->
+  <div id="step-guide" class="step-guide" hidden>
+    <div class="step-guide-header">
+      <span class="step-guide-title">Quick Start</span>
+      <button id="step-guide-close" class="step-guide-close" aria-label="Close guide">&times;</button>
+    </div>
+    <ol class="step-guide-list">
+      <li class="step-guide-item active" data-step="1">
+        <span class="step-num">1</span> Click <strong>Show Me The Best Route</strong> above
+      </li>
+      <li class="step-guide-item" data-step="2">
+        <span class="step-num">2</span> Watch the cells expand and a path appear
+      </li>
+      <li class="step-guide-item" data-step="3">
+        <span class="step-num">3</span> Try <strong>Shortest Steps</strong> on the same grid
+      </li>
+      <li class="step-guide-item" data-step="4">
+        <span class="step-num">4</span> Add walls or generate a <strong>Maze</strong>, then run again
+      </li>
+    </ol>
   </div>
 
   <script src="script.js"></script>
