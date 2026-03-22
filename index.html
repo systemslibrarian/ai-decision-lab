@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>AI Decision Lab — Interactive Pathfinding &amp; Optimization</title>
+  <meta name="description" content="Interactive visualization of search algorithms (DFS, BFS, A*), path smoothing, robot motion planning, and gradient descent optimization." />
+  <meta name="theme-color" content="#0b1120" />
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <a href="#main-content" class="skip-link">Skip to main content</a>
+
+  <div class="app-shell">
+    <header class="hero">
+      <div class="hero-text">
+        <p class="eyebrow" aria-hidden="true">AI &bull; Robotics &bull; Visualization</p>
+        <h1>AI Decision Lab</h1>
+        <p class="subtitle">Explore how search, optimization, and motion planning work together.</p>
+      </div>
+      <nav class="hero-badges" aria-label="Algorithm capabilities">
+        <span>DFS</span>
+        <span>BFS</span>
+        <span>UCS</span>
+        <span>Greedy</span>
+        <span>A*</span>
+        <span>Linear Search</span>
+        <span>Binary Search</span>
+        <span>Gradient Descent</span>
+        <span>Simulated Annealing</span>
+        <span>Genetic Algorithm</span>
+      </nav>
+    </header>
+
+    <section class="project-intro" aria-label="Introduction">
+      <p>
+        Compare uninformed &amp; informed search, linear &amp; binary array lookup, metaheuristic optimization,
+        weighted terrain, path smoothing, and live replanning&thinsp;—&thinsp;all in one interactive lab.
+      </p>
+    </section>
+
+    <!-- Tools -->
+    <section class="toolbar" aria-label="Controls">
+      <div class="toolbar-group tool-group" role="radiogroup" aria-label="Drawing tool selection">
+        <button id="tool-start" role="radio" aria-checked="false" title="Place Start (1)">
+          <span class="btn-icon" aria-hidden="true">📍</span> Start
+        </button>
+        <button id="tool-goal" role="radio" aria-checked="false" title="Place Goal (2)">
+          <span class="btn-icon" aria-hidden="true">🎯</span> Goal
+        </button>
+        <button id="tool-wall" role="radio" aria-checked="true" class="active-tool" title="Place Walls (3)">
+          <span class="btn-icon" aria-hidden="true">🧱</span> Walls
+        </button>
+        <button id="tool-erase" role="radio" aria-checked="false" title="Erase (4)">
+          <span class="btn-icon" aria-hidden="true">🧹</span> Erase
+        </button>
+        <button id="tool-weight" role="radio" aria-checked="false" title="Paint Weight (5)">
+          <span class="btn-icon" aria-hidden="true">⚖️</span> Weight
+        </button>
+      </div>
+
+      <div class="toolbar-group algo-group" role="group" aria-label="Search algorithms">
+        <button id="run-astar" title="Run A* Search (A)">
+          <span class="btn-icon" aria-hidden="true">⭐</span> A*
+        </button>
+        <button id="run-bfs" title="Run BFS (B)">
+          <span class="btn-icon" aria-hidden="true">🌊</span> BFS
+        </button>
+        <button id="run-dfs" title="Run DFS (D)">
+          <span class="btn-icon" aria-hidden="true">🔍</span> DFS
+        </button>
+        <button id="run-ucs" title="Run Uniform-Cost Search (U)">
+          <span class="btn-icon" aria-hidden="true">💰</span> UCS
+        </button>
+        <button id="run-greedy" title="Run Greedy Best-First">
+          <span class="btn-icon" aria-hidden="true">🏃</span> Greedy
+        </button>
+        <button id="optimize-path" title="Optimize Route (O)">
+          <span class="btn-icon" aria-hidden="true">✨</span> Optimize
+        </button>
+        <button id="animate-robot" title="Animate Robot (R)">
+          <span class="btn-icon" aria-hidden="true">🤖</span> Robot
+        </button>
+        <button id="run-gradient" title="Run Gradient Descent (G)">
+          <span class="btn-icon" aria-hidden="true">📉</span> Gradient
+        </button>
+        <button id="run-sa" title="Simulated Annealing">
+          <span class="btn-icon" aria-hidden="true">🌡️</span> SA
+        </button>
+        <button id="run-ga" title="Genetic Algorithm">
+          <span class="btn-icon" aria-hidden="true">🧬</span> GA
+        </button>
+      </div>
+
+      <div class="toolbar-group util-group" role="group" aria-label="Utility actions">
+        <button id="generate-maze" title="Generate Maze (M)">
+          <span class="btn-icon" aria-hidden="true">🏗️</span> Maze
+        </button>
+        <button id="random-scatter" title="Random Obstacles">
+          <span class="btn-icon" aria-hidden="true">🎲</span> Scatter
+        </button>
+        <button id="clear-path" title="Clear Path (C)">
+          <span class="btn-icon" aria-hidden="true">🧽</span> Clear Path
+        </button>
+        <button id="clear-grid" title="Reset Grid (Esc)">
+          <span class="btn-icon" aria-hidden="true">🗑️</span> Reset
+        </button>
+        <button id="compare-mode" title="Compare A* vs DFS">
+          <span class="btn-icon" aria-hidden="true">⚔️</span> Compare
+        </button>
+        <button id="live-mode" aria-pressed="false" title="Live Replan: Off">
+          <span class="btn-icon" aria-hidden="true">🔄</span> <span id="live-label">Live: Off</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- Speed control -->
+    <section class="speed-control" aria-label="Animation speed">
+      <label for="speed-slider">Speed</label>
+      <input type="range" id="speed-slider" min="1" max="10" value="5" aria-label="Animation speed from slow to fast" />
+      <output id="speed-label" for="speed-slider" aria-live="polite">5&times;</output>
+    </section>
+
+    <!-- Legend -->
+    <section class="legend" aria-label="Color legend">
+      <div class="legend-item"><span class="swatch swatch-start" aria-hidden="true"></span>Start</div>
+      <div class="legend-item"><span class="swatch swatch-goal" aria-hidden="true"></span>Goal</div>
+      <div class="legend-item"><span class="swatch swatch-wall" aria-hidden="true"></span>Wall</div>
+      <div class="legend-item"><span class="swatch swatch-open" aria-hidden="true"></span>Open</div>
+      <div class="legend-item"><span class="swatch swatch-closed" aria-hidden="true"></span>Explored</div>
+      <div class="legend-item"><span class="swatch swatch-path" aria-hidden="true"></span>Path</div>
+      <div class="legend-item"><span class="swatch swatch-robot" aria-hidden="true"></span>Robot</div>
+      <div class="legend-item"><span class="swatch swatch-weight" aria-hidden="true"></span>Terrain</div>
+    </section>
+
+    <!-- Main canvas area -->
+    <main id="main-content">
+      <h2 class="section-title">Search <span class="accent">vs</span> Optimization</h2>
+      <p class="instructions">
+        <strong>Left:</strong> grid-based planning &amp; robot navigation.
+        <strong>Right:</strong> continuous loss landscape &amp; gradient descent.
+      </p>
+
+      <div class="split-container">
+        <div class="canvas-card">
+          <div class="canvas-header">
+            <span class="canvas-title">Discrete Planning</span>
+            <span class="canvas-badge" id="grid-algo-badge" aria-live="polite">—</span>
+          </div>
+          <canvas id="gridCanvas" width="780" height="600" tabindex="0" aria-label="Interactive grid for pathfinding. Click to apply selected tool, drag to paint." role="img"></canvas>
+        </div>
+        <div class="canvas-card">
+          <div class="canvas-header">
+            <span class="canvas-title">Continuous Optimization</span>
+            <span class="canvas-badge" id="gradient-badge" aria-live="polite">—</span>
+          </div>
+          <canvas id="gradientCanvas" width="780" height="600" aria-label="Gradient descent on a continuous surface." role="img"></canvas>
+        </div>
+      </div>
+    </main>
+
+    <!-- Stats & info cards -->
+    <div class="info-grid" role="region" aria-label="Statistics and help">
+      <section class="panel panel-status">
+        <h3><span class="panel-icon" aria-hidden="true">📊</span> Status</h3>
+        <div class="stat-row"><span class="stat-label">Tool</span><span id="current-tool" class="stat-value" aria-live="polite">Walls</span></div>
+        <div class="stat-row"><span class="stat-label">Status</span><span id="status" class="stat-value status-ready" aria-live="assertive">Ready</span></div>
+      </section>
+
+      <section class="panel panel-stats">
+        <h3><span class="panel-icon" aria-hidden="true">📈</span> Algorithm Stats</h3>
+        <div class="stat-row"><span class="stat-label">Explored</span><span id="nodes-explored" class="stat-value mono" aria-live="polite">0</span></div>
+        <div class="stat-row"><span class="stat-label">Path length</span><span id="path-length" class="stat-value mono" aria-live="polite">0</span></div>
+        <div class="stat-row"><span class="stat-label">Total cost</span><span id="path-cost" class="stat-value mono" aria-live="polite">0</span></div>
+        <div class="stat-row"><span class="stat-label">Turns</span><span id="turn-count" class="stat-value mono" aria-live="polite">0</span></div>
+        <div class="stat-row"><span class="stat-label">Algorithm</span><span id="algorithm-name" class="stat-value" aria-live="polite">None</span></div>
+      </section>
+
+      <section class="panel panel-howto">
+        <h3><span class="panel-icon" aria-hidden="true">💡</span> How to Use</h3>
+        <ol>
+          <li>Place <strong>start</strong> and <strong>goal</strong> nodes.</li>
+          <li>Draw walls, generate a maze, or scatter obstacles.</li>
+          <li>Paint <strong>weighted terrain</strong> to create expensive zones.</li>
+          <li>Run <strong>A*</strong>, <strong>BFS</strong>, <strong>DFS</strong>, <strong>UCS</strong>, or <strong>Greedy</strong>.</li>
+          <li>Click <strong>Optimize</strong>, then <strong>Robot</strong> to animate.</li>
+          <li>Try <strong>Linear/Binary Search</strong> on array data below.</li>
+          <li>Compare <strong>Gradient Descent</strong>, <strong>SA</strong>, and <strong>GA</strong> on the surface.</li>
+        </ol>
+      </section>
+
+      <section class="panel panel-keys">
+        <h3><span class="panel-icon" aria-hidden="true">⌨️</span> Keyboard</h3>
+        <dl>
+          <dt><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd><kbd>4</kbd><kbd>5</kbd></dt>
+          <dd>Tools — Start, Goal, Walls, Erase, Weight</dd>
+          <dt><kbd>A</kbd><kbd>B</kbd><kbd>D</kbd><kbd>U</kbd></dt>
+          <dd>A*, BFS, DFS, UCS</dd>
+          <dt><kbd>O</kbd><kbd>R</kbd><kbd>G</kbd></dt>
+          <dd>Optimize, Robot, Gradient</dd>
+          <dt><kbd>M</kbd><kbd>C</kbd><kbd>Esc</kbd></dt>
+          <dd>Maze, Clear Path, Reset Grid</dd>
+        </dl>
+      </section>
+    </div>
+
+    <!-- 1D Array Search Section -->
+    <section class="array-search-section" aria-label="1D Array Search Visualization">
+      <h2 class="section-title">Array Search <span class="accent">Visualization</span></h2>
+      <p class="instructions">
+        Watch <strong>Linear Search</strong> scan every element and <strong>Binary Search</strong> halve the search space.
+        Binary Search auto-sorts the array first.
+      </p>
+      <div class="array-toolbar">
+        <button id="run-linear" title="Run Linear Search">
+          <span class="btn-icon" aria-hidden="true">🔎</span> Linear Search
+        </button>
+        <button id="run-binary" title="Run Binary Search">
+          <span class="btn-icon" aria-hidden="true">✂️</span> Binary Search
+        </button>
+        <button id="new-array" title="Generate New Array">
+          <span class="btn-icon" aria-hidden="true">🎲</span> New Array
+        </button>
+      </div>
+      <div class="array-stats-row">
+        <span>Target: <strong id="search-target">—</strong></span>
+        <span>Comparisons: <strong id="array-comparisons">0</strong></span>
+        <span id="array-status">Ready</span>
+        <span class="canvas-badge" id="array-algo-badge" aria-live="polite">—</span>
+      </div>
+      <div class="canvas-card array-canvas-card">
+        <canvas id="arrayCanvas" width="780" height="280" aria-label="Bar chart visualization of array search algorithms" role="img"></canvas>
+      </div>
+    </section>
+
+    <!-- Educational notes -->
+    <section class="edu-section" aria-label="Algorithm explanations">
+      <h2 class="section-title">Understanding the Algorithms</h2>
+      <div class="edu-grid">
+        <article class="edu-card">
+          <h3>🔎 Linear Search</h3>
+          <p>Scans every element one by one until the target is found. Runs in <em>O(n)</em> time. Simple but inefficient for large datasets.</p>
+        </article>
+        <article class="edu-card">
+          <h3>✂️ Binary Search</h3>
+          <p>Requires a sorted array. Halves the search space each step for <em>O(log n)</em> time — exponentially faster than linear on large data.</p>
+        </article>
+        <article class="edu-card">
+          <h3>🔍 Depth-First Search</h3>
+          <p>Explores as deep as possible before backtracking. Fast but does <em>not</em> guarantee the shortest path. Great for maze exploration.</p>
+        </article>
+        <article class="edu-card">
+          <h3>🌊 Breadth-First Search</h3>
+          <p>Explores all neighbors level by level. <em>Guarantees</em> the shortest path on unweighted grids, but ignores terrain cost.</p>
+        </article>
+        <article class="edu-card">
+          <h3>💰 Uniform-Cost Search</h3>
+          <p>Expands the cheapest-cost node first using a priority queue. Guarantees optimal paths on weighted graphs — like Dijkstra's algorithm.</p>
+        </article>
+        <article class="edu-card">
+          <h3>🏃 Greedy Best-First</h3>
+          <p>Expands the node closest to the goal (by heuristic). Very fast but <em>not</em> optimal — can be misled by obstacles and terrain.</p>
+        </article>
+        <article class="edu-card">
+          <h3>⭐ Weighted A*</h3>
+          <p>Uses actual cost + heuristic guidance to find optimal paths through weighted terrain. The gold standard for informed search.</p>
+        </article>
+        <article class="edu-card">
+          <h3>📉 Gradient Descent</h3>
+          <p>Iteratively descends a continuous loss surface to find a local minimum. Powers machine learning, control, and trajectory optimization.</p>
+        </article>
+        <article class="edu-card">
+          <h3>🌡️ Simulated Annealing</h3>
+          <p>A metaheuristic inspired by metallurgy. Accepts worse solutions early (at high temperature) to escape local minima, then progressively refines.</p>
+        </article>
+        <article class="edu-card">
+          <h3>🧬 Genetic Algorithm</h3>
+          <p>Evolves a population of candidate solutions via selection, crossover, and mutation. Great for complex, multi-modal optimization landscapes.</p>
+        </article>
+      </div>
+    </section>
+
+    <footer class="site-footer" role="contentinfo">
+      <p>
+        <strong>AI Decision Lab</strong> — Demonstrating how discrete search and continuous optimization
+        work together in robotics, navigation, and intelligent systems.
+      </p>
+    </footer>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>

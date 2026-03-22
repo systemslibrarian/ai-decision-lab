@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Page Not Found — AI Decision Lab</title>
+  <meta name="theme-color" content="#0b1120" />
+  <style>
+    :root {
+      --bg: #0b1120;
+      --panel: #111827;
+      --border: #1e293b;
+      --text: #f1f5f9;
+      --muted: #94a3b8;
+      --accent: #60a5fa;
+      --accent-2: #22c55e;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      background:
+        radial-gradient(circle at top, rgba(59, 130, 246, 0.16), transparent 38%),
+        linear-gradient(180deg, #0b1120 0%, #0f172a 100%);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    .card {
+      width: min(680px, 100%);
+      background: rgba(17, 24, 39, 0.92);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 32px;
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+    }
+
+    .eyebrow {
+      margin: 0 0 8px;
+      font-size: 12px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    h1 {
+      margin: 0 0 12px;
+      font-size: clamp(2rem, 6vw, 3.8rem);
+      line-height: 1;
+    }
+
+    p {
+      margin: 0 0 16px;
+      color: var(--muted);
+      line-height: 1.65;
+      font-size: 1rem;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 20px;
+    }
+
+    a {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 44px;
+      padding: 0 18px;
+      border-radius: 999px;
+      text-decoration: none;
+      font-weight: 700;
+      transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+    }
+
+    .primary {
+      background: var(--accent);
+      color: #08111f;
+    }
+
+    .secondary {
+      background: transparent;
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    a:hover {
+      transform: translateY(-1px);
+    }
+
+    .mini-map {
+      margin: 24px 0;
+      display: grid;
+      grid-template-columns: repeat(8, 20px);
+      gap: 6px;
+      justify-content: start;
+    }
+
+    .mini-map span {
+      width: 20px;
+      height: 20px;
+      border-radius: 6px;
+      background: #1e293b;
+      border: 1px solid rgba(255, 255, 255, 0.04);
+    }
+
+    .mini-map span.wall { background: #475569; }
+    .mini-map span.start { background: #22c55e; }
+    .mini-map span.goal { background: #ef4444; }
+    .mini-map span.path { background: #a855f7; }
+
+    @media (max-width: 520px) {
+      .card { padding: 24px; }
+      .mini-map { grid-template-columns: repeat(8, 16px); gap: 5px; }
+      .mini-map span { width: 16px; height: 16px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="card">
+    <p class="eyebrow">404 • Route Lost</p>
+    <h1>Page Not Found</h1>
+    <p>
+      The path to this page does not exist. The main AI Decision Lab site is still available,
+      and you can jump back to the interactive algorithms from here.
+    </p>
+
+    <div class="mini-map" aria-hidden="true">
+      <span class="start"></span><span class="path"></span><span class="path"></span><span></span><span class="wall"></span><span></span><span></span><span></span>
+      <span></span><span class="wall"></span><span class="path"></span><span></span><span class="wall"></span><span></span><span class="wall"></span><span></span>
+      <span></span><span></span><span class="path"></span><span class="path"></span><span class="path"></span><span></span><span class="wall"></span><span></span>
+      <span class="wall"></span><span></span><span></span><span class="wall"></span><span class="path"></span><span></span><span></span><span></span>
+      <span></span><span></span><span></span><span class="wall"></span><span class="path"></span><span class="path"></span><span class="path"></span><span class="goal"></span>
+    </div>
+
+    <div class="actions">
+      <a class="primary" href="./">Open AI Decision Lab</a>
+      <a class="secondary" href="https://github.com/systemslibrarian/ai-decision-lab">View Repository</a>
+    </div>
+  </main>
+</body>
+</html>
