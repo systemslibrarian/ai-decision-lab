@@ -194,6 +194,23 @@ function updateStats({ explored = 0, pathLength = 0, moveDistance = 0, terrainCo
   if (badge) badge.textContent = algorithm === "None" ? "—" : algorithm;
 }
 
+let pendingNudge = null;
+
+function showNudge(msg) {
+  let el = $("nudge-toast");
+  if (!el) {
+    el = document.createElement("div");
+    el.id = "nudge-toast";
+    el.className = "nudge-toast";
+    document.querySelector(".app-shell").appendChild(el);
+  }
+  el.textContent = msg;
+  el.hidden = false;
+  el.classList.remove("nudge-hide");
+  clearTimeout(el._timer);
+  el._timer = setTimeout(() => { el.classList.add("nudge-hide"); setTimeout(() => { el.hidden = true; }, 400); }, 6000);
+}
+
 function setBusy(busy) {
   isRunning = busy;
   document.querySelectorAll(".toolbar button, .array-toolbar button").forEach(b => {
@@ -202,6 +219,10 @@ function setBusy(busy) {
   });
   const slider = $("speed-slider");
   if (slider) slider.disabled = busy;
+  if (!busy && pendingNudge) {
+    showNudge(pendingNudge);
+    pendingNudge = null;
+  }
 }
 
 // ═══ Grid Management ═══
@@ -607,6 +628,7 @@ function setupSimpleDemo() {
 async function runSimpleDemo() {
   if (isRunning) return;
   setupSimpleDemo();
+  pendingNudge = "Now try: move the Goal to a new spot, or add walls and run Best Route again.";
   await delay(200);
   runAStar();
 }
@@ -616,14 +638,17 @@ async function runMazeDemo() {
   createGrid();
   generateMaze();
   setTeachingPanel("Weighted A*", "Now the smart route finder has to work around walls instead of going in a straight line.");
+  pendingNudge = "Now try: click Shortest Steps (BFS) on the same maze to see the difference.";
   await delay(200);
   runAStar();
 }
 
 async function runListSearchDemo() {
   if (isRunning) return;
+  switchTab("listsearch");
   generateSearchArray();
   setTeachingPanel("Linear Search", "This demo checks each bar from left to right until it finds the red target value.");
+  pendingNudge = "Now try: turn on Advanced mode, then use Cut Search In Half to compare speed.";
   await delay(200);
   runLinearSearch();
 }
@@ -1119,6 +1144,24 @@ function setLiveMode(next) {
 }
 
 // ═══════════════════════════════════════════════════════════
+// TAB SWITCHING
+// ═══════════════════════════════════════════════════════════
+function switchTab(name) {
+  document.querySelectorAll(".lab-tab").forEach(t => {
+    t.classList.toggle("active", t.dataset.tab === name);
+    t.setAttribute("aria-selected", t.dataset.tab === name ? "true" : "false");
+  });
+  document.querySelectorAll("[data-tab-panel]").forEach(p => {
+    const show = p.dataset.tabPanel === name;
+    p.hidden = !show;
+    p.classList.toggle("active", show);
+  });
+}
+document.querySelectorAll(".lab-tab").forEach(tab => {
+  tab.addEventListener("click", () => switchTab(tab.dataset.tab));
+});
+
+// ═══════════════════════════════════════════════════════════
 // EVENT LISTENERS
 // ═══════════════════════════════════════════════════════════
 
@@ -1142,9 +1185,9 @@ if ($("run-ucs")) $("run-ucs").addEventListener("click", () => !isRunning && run
 if ($("run-greedy")) $("run-greedy").addEventListener("click", () => !isRunning && runGreedy());
 $("optimize-path").addEventListener("click", () => optimizePath());
 $("animate-robot").addEventListener("click", () => animateRobot());
-$("run-gradient").addEventListener("click", () => runGradientDescent());
-if ($("run-sa")) $("run-sa").addEventListener("click", () => runSimulatedAnnealing());
-if ($("run-ga")) $("run-ga").addEventListener("click", () => runGeneticAlgorithm());
+if ($("run-gradient-tab")) $("run-gradient-tab").addEventListener("click", () => runGradientDescent());
+if ($("run-sa-tab")) $("run-sa-tab").addEventListener("click", () => runSimulatedAnnealing());
+if ($("run-ga-tab")) $("run-ga-tab").addEventListener("click", () => runGeneticAlgorithm());
 
 // Utility buttons
 $("generate-maze").addEventListener("click", generateMaze);
@@ -1153,6 +1196,13 @@ $("clear-path").addEventListener("click", clearPathOnly);
 $("clear-grid").addEventListener("click", () => {
   if (isRunning) return;
   createGrid(); drawGrid(); updateStats(); setStatus("Grid cleared.");
+});
+
+// Advanced mode toggle
+if ($("mode-toggle")) $("mode-toggle").addEventListener("click", () => {
+  const on = document.body.classList.toggle("advanced-mode");
+  $("mode-toggle").setAttribute("aria-pressed", on);
+  $("mode-toggle").innerHTML = '<span class="btn-icon" aria-hidden="true">🧭</span> Advanced: ' + (on ? "On" : "Off");
 });
 $("compare-mode").addEventListener("click", compareAlgorithms);
 $("live-mode").addEventListener("click", () => setLiveMode(!liveMode));

@@ -210,6 +210,97 @@ body:not(.advanced-mode) .advanced-only {
   display: none !important;
 }
 
+/* ── How These Connect panel ──────────────────────────────── */
+.connect-panel {
+  margin: 0 0 24px;
+  padding: 20px 24px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.connect-panel .section-title { margin-bottom: 14px; }
+.connect-grid {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.connect-card {
+  flex: 1;
+  padding: 14px;
+  background: rgba(59, 130, 246, .06);
+  border: 1px solid rgba(59, 130, 246, .15);
+  border-radius: var(--radius-sm);
+  text-align: center;
+}
+.connect-card h3 { font-size: 14px; margin: 6px 0 4px; color: var(--accent-2); }
+.connect-card p { font-size: 12.5px; color: var(--muted); line-height: 1.5; margin: 0; }
+.connect-icon { font-size: 22px; }
+.connect-arrow { font-size: 20px; color: var(--muted); opacity: .5; flex-shrink: 0; }
+.connect-summary {
+  font-size: 13px;
+  color: var(--muted);
+  text-align: center;
+  margin: 0;
+}
+.connect-summary strong { color: var(--text); }
+@media (max-width: 600px) {
+  .connect-grid { flex-direction: column; }
+  .connect-arrow { transform: rotate(90deg); }
+}
+
+/* ── Tab navigation ───────────────────────────────────────── */
+.lab-tabs {
+  display: flex;
+  gap: 2px;
+  margin: 0 0 18px;
+  border-bottom: 2px solid var(--border);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.lab-tabs::-webkit-scrollbar { display: none; }
+.lab-tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 10px 20px !important;
+  background: transparent !important;
+  border: none !important;
+  border-bottom: 3px solid transparent !important;
+  border-radius: 0 !important;
+  color: var(--muted) !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color .15s, border-color .15s;
+  min-height: auto !important;
+  transform: none !important;
+}
+.lab-tab:hover {
+  color: var(--text) !important;
+  background: transparent !important;
+  transform: none !important;
+}
+.lab-tab.active {
+  color: var(--accent-2) !important;
+  border-bottom-color: var(--accent) !important;
+}
+.tab-desc {
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--muted);
+  opacity: 0.7;
+}
+.tab-panel { display: block; }
+.tab-panel[hidden] { display: none; }
+@media (max-width: 480px) {
+  .tab-desc { display: none; }
+  .lab-tab { padding: 8px 14px !important; font-size: 13px !important; }
+}
+
 .demo-button {
   justify-content: center;
   min-height: 52px;
@@ -319,6 +410,11 @@ button:disabled, button.disabled {
   color: var(--purple);
   margin-left: 6px;
   position: relative;
+  animation: compare-pulse 2.5s ease-in-out 3;
+}
+@keyframes compare-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(168, 85, 247, 0); }
+  50% { box-shadow: 0 0 12px 3px rgba(168, 85, 247, .35); }
 }
 .btn-compare::before {
   content: '';
@@ -332,6 +428,7 @@ button:disabled, button.disabled {
 .btn-compare:hover {
   background: rgba(168, 85, 247, .28) !important;
   border-color: var(--purple) !important;
+  animation: none;
 }
 
 /* Compare callout */
@@ -472,7 +569,7 @@ button.is-running::after {
 /* ── Canvas area ──────────────────────────────────────────── */
 .split-container {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;
   gap: 14px;
   margin-bottom: 18px;
 }
@@ -742,6 +839,55 @@ kbd {
   border-radius: 3px;
 }
 
+/* ── Glossary ─────────────────────────────────────────────── */
+.glossary {
+  margin: 24px 0;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.glossary-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 20px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+}
+.glossary-toggle::-webkit-details-marker { display: none; }
+.glossary-toggle::after {
+  content: '▸';
+  margin-left: auto;
+  transition: transform .2s;
+  color: var(--muted);
+}
+.glossary[open] .glossary-toggle::after { transform: rotate(90deg); }
+.glossary-icon { font-size: 18px; }
+.glossary-body { padding: 0 20px 18px; }
+.glossary-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 4px 28px;
+  margin: 0;
+}
+.glossary-list dt {
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--accent-2);
+  margin-top: 10px;
+}
+.glossary-list dd {
+  margin: 2px 0 0;
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
 /* ── Footer ───────────────────────────────────────────────── */
 .lab-footer {
   padding: 28px 0 8px;
@@ -788,6 +934,8 @@ kbd {
   .toolbar-group { gap: 4px; padding: 4px 6px; }
   .speed-control input[type="range"] { width: 100px; }
   .teaching-grid { grid-template-columns: 1fr; }
+  .connect-panel { padding: 16px; }
+  canvas { max-width: 100%; height: auto !important; }
 }
 
 @media (max-width: 480px) {
@@ -809,6 +957,9 @@ kbd {
   .canvas-card { padding: 8px; }
   .legend { gap: 8px; font-size: 11px; }
   .panel { padding: 12px; }
+  .glossary-toggle { padding: 12px 14px; font-size: 14px; }
+  .glossary-list { grid-template-columns: 1fr; }
+  .nudge-toast { font-size: 13px; padding: 10px 16px; bottom: 12px; }
 }
 
 /* ── Array Search Section ─────────────────────────────────── */
@@ -874,6 +1025,34 @@ kbd {
   .swatch { border-width: 2px; }
   .panel, .canvas-card, .toolbar-group { border-width: 2px; }
 }
+
+/* ── Nudge toast ───────────────────────────────────────────── */
+.nudge-toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(59, 130, 246, .92);
+  color: #fff;
+  padding: 12px 22px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  z-index: 9000;
+  box-shadow: 0 4px 20px rgba(0,0,0,.4);
+  animation: nudge-in .35s ease-out;
+  max-width: 90vw;
+  text-align: center;
+}
+.nudge-toast.nudge-hide {
+  opacity: 0;
+  transition: opacity .4s ease;
+}
+@keyframes nudge-in {
+  from { opacity: 0; transform: translateX(-50%) translateY(20px); }
+  to { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
 /* ── Onboarding overlay ────────────────────────────────────── */
 .onboarding-overlay {
   position: fixed;
