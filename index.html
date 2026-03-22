@@ -33,97 +33,181 @@
       </nav>
     </header>
 
+    <div class="lab-thesis">
+      <div class="thesis-half">
+        <span class="thesis-label">Discrete Planning</span>
+        <p>Grid-based search algorithms navigate structured spaces — finding optimal paths through walls, terrain, and obstacles.</p>
+      </div>
+      <div class="thesis-divider" aria-hidden="true">↔</div>
+      <div class="thesis-half">
+        <span class="thesis-label">Continuous Optimization</span>
+        <p>Gradient-based and metaheuristic methods explore smooth loss surfaces — escaping local minima to find global solutions.</p>
+      </div>
+    </div>
+
     <section class="project-intro" aria-label="Introduction">
       <p>
-        Compare uninformed &amp; informed search, linear &amp; binary array lookup, metaheuristic optimization,
-        weighted terrain, path smoothing, and live replanning&thinsp;—&thinsp;all in one interactive lab.
+        This is a visual playground for seeing how a computer finds routes, searches lists, and improves bad guesses.
+        If you are new, start with the guided demos below and ignore the advanced buttons until the page makes sense.
       </p>
+    </section>
+
+    <section class="start-here" aria-label="Start here guide">
+      <div class="start-here-copy">
+        <p class="eyebrow">Start Here</p>
+        <h2 class="section-title">New to this? Use these first.</h2>
+        <p class="instructions">
+          These buttons set up an example for you. Watch what happens first, then try the advanced controls after that.
+        </p>
+      </div>
+      <div class="start-here-actions">
+        <button id="mode-toggle" class="mode-toggle" aria-pressed="false" title="Show or hide advanced controls">
+          <span class="btn-icon" aria-hidden="true">🧭</span> Advanced: Off
+        </button>
+        <button id="demo-best-route" class="demo-button" title="Create a simple map and show the smart route finder">
+          <span class="btn-icon" aria-hidden="true">⭐</span> Show Me The Best Route
+        </button>
+        <button id="demo-maze-run" class="demo-button" title="Create a maze and solve it automatically">
+          <span class="btn-icon" aria-hidden="true">🏁</span> Solve A Maze For Me
+        </button>
+        <button id="demo-list-search" class="demo-button" title="Run a simple list search example automatically">
+          <span class="btn-icon" aria-hidden="true">🔎</span> Show Me A List Search
+        </button>
+      </div>
     </section>
 
     <!-- Tools -->
     <section class="toolbar" aria-label="Controls">
       <div class="toolbar-group tool-group" role="radiogroup" aria-label="Drawing tool selection">
         <button id="tool-start" role="radio" aria-checked="false" title="Place Start (1)">
-          <span class="btn-icon" aria-hidden="true">📍</span> Start
+          <span class="btn-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" class="btn-icon-svg"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2.5"/></svg>
+          </span> Start
         </button>
         <button id="tool-goal" role="radio" aria-checked="false" title="Place Goal (2)">
-          <span class="btn-icon" aria-hidden="true">🎯</span> Goal
+          <span class="btn-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" class="btn-icon-svg"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1.5"/></svg>
+          </span> Goal
         </button>
         <button id="tool-wall" role="radio" aria-checked="true" class="active-tool" title="Place Walls (3)">
-          <span class="btn-icon" aria-hidden="true">🧱</span> Walls
+          <span class="btn-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" class="btn-icon-svg"><rect x="4" y="5" width="16" height="14" rx="1"/><path d="M4 10h16M9 5v5M15 10v9M12 10v9"/></svg>
+          </span> Walls
         </button>
         <button id="tool-erase" role="radio" aria-checked="false" title="Erase (4)">
-          <span class="btn-icon" aria-hidden="true">🧹</span> Erase
+          <span class="btn-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" class="btn-icon-svg"><path d="M6 15 14 7l4 4-8 8H6z"/><path d="M14 7l2-2 4 4-2 2"/><path d="M4 19h10"/></svg>
+          </span> Erase
         </button>
-        <button id="tool-weight" role="radio" aria-checked="false" title="Paint Weight (5)">
-          <span class="btn-icon" aria-hidden="true">⚖️</span> Weight
+        <button id="tool-weight" class="advanced-only" role="radio" aria-checked="false" title="Paint Weight (5)">
+          <span class="btn-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" class="btn-icon-svg"><path d="M12 4v16"/><path d="M7 7h10"/><path d="m7 7-3 5a3 3 0 0 0 6 0Z"/><path d="m17 7-3 5a3 3 0 0 0 6 0Z"/><path d="M9 20h6"/></svg>
+          </span> Weight
         </button>
       </div>
 
       <div class="toolbar-group algo-group" role="group" aria-label="Search algorithms">
         <button id="run-astar" title="Run A* Search (A)">
-          <span class="btn-icon" aria-hidden="true">⭐</span> A*
+          <span class="btn-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" class="btn-icon-svg"><path d="m12 4 2.2 4.6 5 .7-3.6 3.5.9 4.9L12 15.2 7.5 17.7l.9-4.9L4.8 9.3l5-.7Z"/></svg>
+          </span> Best Route
         </button>
         <button id="run-bfs" title="Run BFS (B)">
-          <span class="btn-icon" aria-hidden="true">🌊</span> BFS
+          <span class="btn-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" class="btn-icon-svg"><path d="M4 15c1.5 0 1.5-2 3-2s1.5 2 3 2 1.5-2 3-2 1.5 2 3 2 1.5-2 3-2"/><path d="M4 19c1.5 0 1.5-2 3-2s1.5 2 3 2 1.5-2 3-2 1.5 2 3 2 1.5-2 3-2"/><path d="M4 11c1.5 0 1.5-2 3-2s1.5 2 3 2 1.5-2 3-2 1.5 2 3 2 1.5-2 3-2"/></svg>
+          </span> Shortest Steps
         </button>
-        <button id="run-dfs" title="Run DFS (D)">
-          <span class="btn-icon" aria-hidden="true">🔍</span> DFS
+        <button id="run-dfs" class="advanced-only" title="Run DFS (D)">
+          <span class="btn-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" class="btn-icon-svg"><circle cx="11" cy="11" r="6"/><path d="m20 20-4.2-4.2"/><path d="M11 8v6"/><path d="M8 11h6"/></svg>
+          </span> Deep Search
         </button>
-        <button id="run-ucs" title="Run Uniform-Cost Search (U)">
-          <span class="btn-icon" aria-hidden="true">💰</span> UCS
+        <button id="run-ucs" class="advanced-only" title="Run Uniform-Cost Search (U)">
+          <span class="btn-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" class="btn-icon-svg"><path d="M12 4v16"/><path d="M16 7.5c0-1.4-1.8-2.5-4-2.5s-4 1.1-4 2.5 1.8 2.5 4 2.5 4 1.1 4 2.5-1.8 2.5-4 2.5-4-1.1-4-2.5"/></svg>
+          </span> Cheapest Route
         </button>
-        <button id="run-greedy" title="Run Greedy Best-First">
-          <span class="btn-icon" aria-hidden="true">🏃</span> Greedy
+        <button id="run-greedy" class="advanced-only" title="Run Greedy Best-First">
+          <span class="btn-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" class="btn-icon-svg"><circle cx="16" cy="5" r="2"/><path d="m12 8 3 2 2 4"/><path d="m10 20 2-5-2-3-3 2"/><path d="m14 20 1-4 3-2"/></svg>
+          </span> Fast Guess
         </button>
         <button id="optimize-path" title="Optimize Route (O)">
-          <span class="btn-icon" aria-hidden="true">✨</span> Optimize
+          <span class="btn-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" class="btn-icon-svg"><path d="M4 16c3-8 7-8 10-4s6 4 6-2"/><path d="m17 8 3 2-1 3"/></svg>
+          </span> Smooth Path
         </button>
         <button id="animate-robot" title="Animate Robot (R)">
-          <span class="btn-icon" aria-hidden="true">🤖</span> Robot
+          <span class="btn-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" class="btn-icon-svg"><rect x="7" y="8" width="10" height="8" rx="2"/><path d="M12 4v4"/><path d="M9 16v3M15 16v3M7 11H5M19 11h-2"/><circle cx="10" cy="12" r="1"/><circle cx="14" cy="12" r="1"/></svg>
+          </span> Watch Robot
         </button>
-        <button id="run-gradient" title="Run Gradient Descent (G)">
-          <span class="btn-icon" aria-hidden="true">📉</span> Gradient
+        <button id="run-gradient" class="advanced-only" title="Run Gradient Descent (G)">
+          <span class="btn-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" class="btn-icon-svg"><path d="M4 6v12h16"/><path d="m7 10 3 3 4-5 3 4"/></svg>
+          </span> Find Low Spot
         </button>
-        <button id="run-sa" title="Simulated Annealing">
-          <span class="btn-icon" aria-hidden="true">🌡️</span> SA
+        <button id="run-sa" class="advanced-only" title="Simulated Annealing">
+          <span class="btn-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" class="btn-icon-svg"><path d="M10 5a2 2 0 1 1 4 0v7.5a4 4 0 1 1-4 0Z"/><path d="M12 13V7"/></svg>
+          </span> Escape Trap
         </button>
-        <button id="run-ga" title="Genetic Algorithm">
-          <span class="btn-icon" aria-hidden="true">🧬</span> GA
+        <button id="run-ga" class="advanced-only" title="Genetic Algorithm">
+          <span class="btn-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" class="btn-icon-svg"><path d="M8 4c0 4 8 4 8 8s-8 4-8 8"/><path d="M16 4c0 4-8 4-8 8s8 4 8 8"/><path d="M9 7h6M9 17h6"/></svg>
+          </span> Evolve Answers
         </button>
       </div>
 
       <div class="toolbar-group util-group" role="group" aria-label="Utility actions">
         <button id="generate-maze" title="Generate Maze (M)">
-          <span class="btn-icon" aria-hidden="true">🏗️</span> Maze
+          <span class="btn-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" class="btn-icon-svg"><path d="M4 4h16v16H4z"/><path d="M8 4v5h4V4M16 9V4M4 12h5v4H4M15 12h5M12 9v11"/></svg>
+          </span> Maze
         </button>
-        <button id="random-scatter" title="Random Obstacles">
-          <span class="btn-icon" aria-hidden="true">🎲</span> Scatter
+        <button id="random-scatter" class="advanced-only" title="Random Obstacles">
+          <span class="btn-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" class="btn-icon-svg"><path d="M6 7h12M6 12h12M6 17h12"/><path d="m15 5 3 2-3 2"/><path d="m9 10-3 2 3 2"/><path d="m15 15 3 2-3 2"/></svg>
+          </span> Scatter
         </button>
         <button id="clear-path" title="Clear Path (C)">
-          <span class="btn-icon" aria-hidden="true">🧽</span> Clear Path
+          <span class="btn-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" class="btn-icon-svg"><circle cx="12" cy="12" r="8"/><path d="M8 12h8"/></svg>
+          </span> Clear Path
         </button>
         <button id="clear-grid" title="Reset Grid (Esc)">
-          <span class="btn-icon" aria-hidden="true">🗑️</span> Reset
+          <span class="btn-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" class="btn-icon-svg"><path d="M5 7h14"/><path d="M9 7V5h6v2"/><path d="M8 10v7M12 10v7M16 10v7"/><path d="M7 7l1 12h8l1-12"/></svg>
+          </span> Reset
         </button>
-        <button id="compare-mode" title="Compare A* vs DFS">
-          <span class="btn-icon" aria-hidden="true">⚔️</span> Compare
+        <button id="compare-mode" class="advanced-only btn-compare" title="Compare two algorithms side by side">
+          <span class="btn-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" class="btn-icon-svg"><rect x="4" y="5" width="6" height="14" rx="1"/><rect x="14" y="5" width="6" height="14" rx="1"/></svg>
+          </span> Compare
         </button>
-        <button id="live-mode" aria-pressed="false" title="Live Replan: Off">
-          <span class="btn-icon" aria-hidden="true">🔄</span> <span id="live-label">Live: Off</span>
+        <button id="live-mode" class="advanced-only" aria-pressed="false" title="Live Replan: Off">
+          <span class="btn-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" class="btn-icon-svg"><path d="M20 11a8 8 0 0 0-14-5"/><path d="M4 4v5h5"/><path d="M4 13a8 8 0 0 0 14 5"/><path d="M20 20v-5h-5"/></svg>
+          </span> <span id="live-label">Live: Off</span>
         </button>
       </div>
     </section>
 
+    <div class="compare-callout" id="compareCallout" hidden>
+      <strong>Compare Mode</strong>
+      Select two algorithms and run them simultaneously to compare
+      explored nodes, path length, and cost side by side.
+    </div>
+
     <!-- Speed control -->
-    <section class="speed-control" aria-label="Animation speed">
+    <section class="speed-control advanced-only" aria-label="Animation speed">
       <label for="speed-slider">Speed</label>
       <input type="range" id="speed-slider" min="1" max="10" value="5" aria-label="Animation speed from slow to fast" />
       <output id="speed-label" for="speed-slider" aria-live="polite">5&times;</output>
     </section>
 
     <!-- Legend -->
-    <section class="legend" aria-label="Color legend">
+    <section class="legend advanced-only" aria-label="Color legend">
       <div class="legend-item"><span class="swatch swatch-start" aria-hidden="true"></span>Start</div>
       <div class="legend-item"><span class="swatch swatch-goal" aria-hidden="true"></span>Goal</div>
       <div class="legend-item"><span class="swatch swatch-wall" aria-hidden="true"></span>Wall</div>
@@ -136,14 +220,14 @@
 
     <!-- Main canvas area -->
     <main id="main-content">
-      <h2 class="section-title">Search <span class="accent">vs</span> Optimization</h2>
+      <h2 class="section-title">Find A Route <span class="accent">and</span> Watch It</h2>
       <p class="instructions">
-        <strong>Left:</strong> grid-based planning &amp; robot navigation.
-        <strong>Right:</strong> continuous loss landscape &amp; gradient descent.
+        <strong>Left:</strong> a map where the computer finds a route from start to goal.
+        <strong>Right:</strong> an advanced experiment area for trying other kinds of problem solving.
       </p>
 
       <div class="split-container">
-        <div class="canvas-card">
+        <div class="canvas-card advanced-only">
           <div class="canvas-header">
             <span class="canvas-title">Discrete Planning</span>
             <span class="canvas-badge" id="grid-algo-badge" aria-live="polite">—</span>
@@ -168,29 +252,56 @@
         <div class="stat-row"><span class="stat-label">Status</span><span id="status" class="stat-value status-ready" aria-live="assertive">Ready</span></div>
       </section>
 
-      <section class="panel panel-stats">
+      <section class="panel panel-stats advanced-only">
         <h3><span class="panel-icon" aria-hidden="true">📈</span> Algorithm Stats</h3>
+        <p id="stats-placeholder" class="stats-placeholder">Run an algorithm to see stats here.</p>
+        <div id="stats-live" class="stats-live" hidden>
         <div class="stat-row"><span class="stat-label">Explored</span><span id="nodes-explored" class="stat-value mono" aria-live="polite">0</span></div>
         <div class="stat-row"><span class="stat-label">Path length</span><span id="path-length" class="stat-value mono" aria-live="polite">0</span></div>
-        <div class="stat-row"><span class="stat-label">Total cost</span><span id="path-cost" class="stat-value mono" aria-live="polite">0</span></div>
+        <div class="stat-row"><span class="stat-label">Move distance</span><span id="move-distance" class="stat-value mono" aria-live="polite">0</span></div>
+        <div class="stat-row"><span class="stat-label">Terrain surcharge</span><span id="terrain-cost" class="stat-value mono" aria-live="polite">0</span></div>
+        <div class="stat-row"><span class="stat-label">Turn penalty</span><span id="turn-penalty" class="stat-value mono" aria-live="polite">0</span></div>
+        <div class="stat-row"><span class="stat-label">Total score</span><span id="path-cost" class="stat-value mono" aria-live="polite">0</span></div>
         <div class="stat-row"><span class="stat-label">Turns</span><span id="turn-count" class="stat-value mono" aria-live="polite">0</span></div>
         <div class="stat-row"><span class="stat-label">Algorithm</span><span id="algorithm-name" class="stat-value" aria-live="polite">None</span></div>
+        </div>
+      </section>
+
+      <section class="panel panel-teaching">
+        <h3><span class="panel-icon" aria-hidden="true">🧠</span> Why This Algorithm</h3>
+        <div class="teaching-block">
+          <p class="teaching-label">What it is doing</p>
+          <p id="teaching-strategy" class="teaching-value">Choose an algorithm to see how it makes decisions.</p>
+        </div>
+        <div class="teaching-block">
+          <p class="teaching-label">What happens next</p>
+          <p id="teaching-next-step" class="teaching-value">The explainer updates while each demo runs.</p>
+        </div>
+        <div class="teaching-grid">
+          <div>
+            <p class="teaching-label">Good at</p>
+            <p id="teaching-guarantee" class="teaching-value">—</p>
+          </div>
+          <div>
+            <p class="teaching-label">Weak spot</p>
+            <p id="teaching-tradeoff" class="teaching-value">—</p>
+          </div>
+        </div>
       </section>
 
       <section class="panel panel-howto">
-        <h3><span class="panel-icon" aria-hidden="true">💡</span> How to Use</h3>
+        <h3><span class="panel-icon" aria-hidden="true">💡</span> Easiest Way To Use This</h3>
         <ol>
-          <li>Place <strong>start</strong> and <strong>goal</strong> nodes.</li>
-          <li>Draw walls, generate a maze, or scatter obstacles.</li>
-          <li>Paint <strong>weighted terrain</strong> to create expensive zones.</li>
-          <li>Run <strong>A*</strong>, <strong>BFS</strong>, <strong>DFS</strong>, <strong>UCS</strong>, or <strong>Greedy</strong>.</li>
-          <li>Click <strong>Optimize</strong>, then <strong>Robot</strong> to animate.</li>
-          <li>Try <strong>Linear/Binary Search</strong> on array data below.</li>
-          <li>Compare <strong>Gradient Descent</strong>, <strong>SA</strong>, and <strong>GA</strong> on the surface.</li>
+          <li>Press one of the <strong>Start Here</strong> buttons first.</li>
+          <li>Watch the route or search happen before changing anything.</li>
+          <li>Read the <strong>Why This Algorithm</strong> card while it runs.</li>
+          <li>When you are ready, move the <strong>Start</strong> and <strong>Goal</strong> points yourself.</li>
+          <li>Add walls only after you understand what the default demo is doing.</li>
+          <li>Use the array section below for simple list search examples.</li>
         </ol>
       </section>
 
-      <section class="panel panel-keys">
+      <section class="panel panel-keys advanced-only">
         <h3><span class="panel-icon" aria-hidden="true">⌨️</span> Keyboard</h3>
         <dl>
           <dt><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd><kbd>4</kbd><kbd>5</kbd></dt>
@@ -203,24 +314,32 @@
           <dd>Maze, Clear Path, Reset Grid</dd>
         </dl>
       </section>
+
+      <section class="panel panel-compare advanced-only">
+        <h3><span class="panel-icon" aria-hidden="true">⚖️</span> Compare Algorithms</h3>
+        <p class="compare-copy">Use <strong>Compare</strong> to see how different route-finding styles behave on the same map.</p>
+        <div id="comparison-results" class="comparison-results" aria-live="polite">
+          <p class="comparison-empty">No comparison has been run yet.</p>
+        </div>
+      </section>
     </div>
 
     <!-- 1D Array Search Section -->
     <section class="array-search-section" aria-label="1D Array Search Visualization">
-      <h2 class="section-title">Array Search <span class="accent">Visualization</span></h2>
+      <h2 class="section-title">Find A Number In A List</h2>
       <p class="instructions">
-        Watch <strong>Linear Search</strong> scan every element and <strong>Binary Search</strong> halve the search space.
-        Binary Search auto-sorts the array first.
+        This section shows two ways a computer can look for one number in a list.
+        One checks every item. The other sorts the list first and cuts the search area in half each step.
       </p>
       <div class="array-toolbar">
         <button id="run-linear" title="Run Linear Search">
-          <span class="btn-icon" aria-hidden="true">🔎</span> Linear Search
+          <span class="btn-icon" aria-hidden="true">🔎</span> Check One By One
         </button>
-        <button id="run-binary" title="Run Binary Search">
-          <span class="btn-icon" aria-hidden="true">✂️</span> Binary Search
+        <button id="run-binary" class="advanced-only" title="Run Binary Search">
+          <span class="btn-icon" aria-hidden="true">✂️</span> Cut Search In Half
         </button>
         <button id="new-array" title="Generate New Array">
-          <span class="btn-icon" aria-hidden="true">🎲</span> New Array
+          <span class="btn-icon" aria-hidden="true">🎲</span> New Example
         </button>
       </div>
       <div class="array-stats-row">
@@ -236,57 +355,83 @@
 
     <!-- Educational notes -->
     <section class="edu-section" aria-label="Algorithm explanations">
-      <h2 class="section-title">Understanding the Algorithms</h2>
+      <h2 class="section-title">What These Buttons Mean</h2>
       <div class="edu-grid">
         <article class="edu-card">
-          <h3>🔎 Linear Search</h3>
-          <p>Scans every element one by one until the target is found. Runs in <em>O(n)</em> time. Simple but inefficient for large datasets.</p>
+          <h3>🔎 Check One By One</h3>
+          <p>The computer starts at the first item and keeps checking until it finds the match.</p>
         </article>
         <article class="edu-card">
-          <h3>✂️ Binary Search</h3>
-          <p>Requires a sorted array. Halves the search space each step for <em>O(log n)</em> time — exponentially faster than linear on large data.</p>
+          <h3>✂️ Cut Search In Half</h3>
+          <p>After sorting the list, the computer keeps splitting the remaining choices in half to find the answer faster.</p>
         </article>
         <article class="edu-card">
-          <h3>🔍 Depth-First Search</h3>
-          <p>Explores as deep as possible before backtracking. Fast but does <em>not</em> guarantee the shortest path. Great for maze exploration.</p>
+          <h3>🔍 Deep Search</h3>
+          <p>This tries one route for a long time before backing up and trying another.</p>
         </article>
         <article class="edu-card">
-          <h3>🌊 Breadth-First Search</h3>
-          <p>Explores all neighbors level by level. <em>Guarantees</em> the shortest path on unweighted grids, but ignores terrain cost.</p>
+          <h3>🌊 Shortest Steps</h3>
+          <p>This spreads out evenly from the start and is good for finding the path with the fewest steps.</p>
         </article>
         <article class="edu-card">
-          <h3>💰 Uniform-Cost Search</h3>
-          <p>Expands the cheapest-cost node first using a priority queue. Guarantees optimal paths on weighted graphs — like Dijkstra's algorithm.</p>
+          <h3>💰 Cheapest Route</h3>
+          <p>This pays attention to expensive areas and tries to find the route that costs the least overall.</p>
         </article>
         <article class="edu-card">
-          <h3>🏃 Greedy Best-First</h3>
-          <p>Expands the node closest to the goal (by heuristic). Very fast but <em>not</em> optimal — can be misled by obstacles and terrain.</p>
+          <h3>🏃 Fast Guess</h3>
+          <p>This rushes toward the goal based on what looks close, even if that guess turns out to be wrong.</p>
         </article>
         <article class="edu-card">
-          <h3>⭐ Weighted A*</h3>
-          <p>Uses actual cost + heuristic guidance to find optimal paths through weighted terrain. The gold standard for informed search.</p>
+          <h3>⭐ Best Route</h3>
+          <p>This balances distance so far with a smart guess about what looks promising next.</p>
         </article>
         <article class="edu-card">
-          <h3>📉 Gradient Descent</h3>
-          <p>Iteratively descends a continuous loss surface to find a local minimum. Powers machine learning, control, and trajectory optimization.</p>
+          <h3>📉 Find Low Spot</h3>
+          <p>This keeps moving downhill to find a low point, like a ball rolling into a valley.</p>
         </article>
         <article class="edu-card">
-          <h3>🌡️ Simulated Annealing</h3>
-          <p>A metaheuristic inspired by metallurgy. Accepts worse solutions early (at high temperature) to escape local minima, then progressively refines.</p>
+          <h3>🌡️ Escape Trap</h3>
+          <p>This sometimes allows a worse move now so it can avoid getting stuck in a bad place later.</p>
         </article>
         <article class="edu-card">
-          <h3>🧬 Genetic Algorithm</h3>
-          <p>Evolves a population of candidate solutions via selection, crossover, and mutation. Great for complex, multi-modal optimization landscapes.</p>
+          <h3>🧬 Evolve Answers</h3>
+          <p>This tries many possible answers, keeps the stronger ones, and mixes them to make better ones.</p>
         </article>
       </div>
     </section>
 
-    <footer class="site-footer" role="contentinfo">
+    <footer class="lab-footer" role="contentinfo">
       <p>
-        <strong>AI Decision Lab</strong> — Demonstrating how discrete search and continuous optimization
-        work together in robotics, navigation, and intelligent systems.
+        Built by <a href="https://github.com/systemslibrarian" target="_blank" rel="noopener">Paul Clark</a>
+        &middot; <a href="https://github.com/systemslibrarian/ai-decision-lab" target="_blank" rel="noopener">View source</a>
+        &middot; <a href="https://ciphermuseum.com" target="_blank" rel="noopener">Cipher Museum</a>
+      </p>
+      <p class="footer-sub">
+        Demonstrating discrete search and continuous optimization in a single interactive lab.
       </p>
     </footer>
+  </div>
+
+  <!-- Onboarding overlay -->
+  <div id="onboarding-overlay" class="onboarding-overlay" role="dialog" aria-modal="true" aria-label="Welcome" hidden>
+    <div class="onboarding-card">
+      <h2>Welcome to AI Decision Lab</h2>
+      <p>
+        This lab visualizes how AI algorithms make decisions &mdash;
+        from navigating a grid to descending a loss surface.
+      </p>
+      <p><strong>To get started:</strong></p>
+      <ol>
+        <li>Click the grid to place a Start point</li>
+        <li>Click again to place a Goal</li>
+        <li>Draw walls or generate a maze</li>
+        <li>Run A* &mdash; then try comparing it to BFS</li>
+      </ol>
+      <div class="onboarding-actions">
+        <button id="onboarding-start" class="onboarding-btn-primary">Start Exploring</button>
+        <button id="onboarding-skip" class="onboarding-btn-secondary">Skip</button>
+      </div>
+    </div>
   </div>
 
   <script src="script.js"></script>

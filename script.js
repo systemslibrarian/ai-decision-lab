@@ -26,6 +26,82 @@ let lastPath = [], lastRawPath = [];
 let nodesExploredCount = 0, currentAlgorithmName = "None";
 let gradientSurface = [], gradientTrace = [], gradientPoint = { x: 60, y: 60 };
 let speedMultiplier = 5;
+let baseSearchArray = [], arrayView = [], searchTarget = -1;
+
+const TURN_PENALTY_BY_ALGORITHM = {
+  "Weighted A*": 0.35,
+  "Weighted A* + Smooth": 0.35,
+  "Smoothed Path": 0.35
+};
+
+const TEACHING_NOTES = {
+  "Weighted A*": {
+    strategy: "Ranks frontier nodes by travel cost so far plus a heuristic estimate to the goal.",
+    guarantee: "Optimal when the heuristic is admissible and consistent.",
+    tradeoff: "More bookkeeping than BFS or DFS, but usually explores far fewer nodes.",
+    next: "Watch how the open set prefers nodes that are both cheap and promising."
+  },
+  BFS: {
+    strategy: "Expands the frontier level by level using a queue.",
+    guarantee: "Finds the shallowest path on an unweighted graph.",
+    tradeoff: "Ignores terrain cost and can expand many nodes.",
+    next: "The oldest frontier node is always explored next."
+  },
+  DFS: {
+    strategy: "Dives down one branch as far as possible before backtracking.",
+    guarantee: "Finds a path if one exists, but not the best one.",
+    tradeoff: "Can be fast to reach any solution, but may wander deeply into bad branches.",
+    next: "The newest branch on the stack is explored next."
+  },
+  UCS: {
+    strategy: "Always expands the currently cheapest total-cost path using a priority queue.",
+    guarantee: "Optimal for weighted graphs with non-negative costs.",
+    tradeoff: "Can do more work than A* because it has no goal heuristic.",
+    next: "The frontier node with the lowest accumulated cost is chosen next."
+  },
+  "Greedy Best-First": {
+    strategy: "Ignores path cost so far and chases whichever node looks closest to the goal.",
+    guarantee: "No optimality guarantee.",
+    tradeoff: "Often fast, but can be misled by walls and expensive terrain.",
+    next: "The frontier node with the smallest heuristic estimate is chosen next."
+  },
+  "Linear Search": {
+    strategy: "Checks each element in order until the target is found.",
+    guarantee: "Works on any array ordering.",
+    tradeoff: "Time grows linearly with the number of elements.",
+    next: "Each step only eliminates one element from consideration."
+  },
+  "Binary Search": {
+    strategy: "Sorts the array view, then repeatedly halves the remaining search interval.",
+    guarantee: "Fast logarithmic search, but only on sorted data.",
+    tradeoff: "Requires ordering first, which adds setup cost if the input is unsorted.",
+    next: "Each midpoint comparison discards half of the remaining candidates."
+  },
+  "Gradient Descent": {
+    strategy: "Follows the negative gradient downhill toward a local minimum.",
+    guarantee: "Improves locally, but not guaranteed to find the global minimum.",
+    tradeoff: "Efficient, but sensitive to starting position and local minima.",
+    next: "Each step moves opposite the local slope of the surface."
+  },
+  "Simulated Annealing": {
+    strategy: "Sometimes accepts worse moves early on so it can escape local minima.",
+    guarantee: "Can explore globally better than gradient descent, but remains stochastic.",
+    tradeoff: "Slower and less predictable than a pure greedy descent.",
+    next: "As the temperature drops, uphill moves become less likely."
+  },
+  "Genetic Algorithm": {
+    strategy: "Evolves a population through selection, crossover, and mutation.",
+    guarantee: "No optimality guarantee, but good global exploration on rough landscapes.",
+    tradeoff: "Needs many evaluations and parameter tuning.",
+    next: "The fittest candidates are more likely to produce the next generation."
+  },
+  None: {
+    strategy: "Pick one of the Start Here demos and watch what the computer decides next.",
+    guarantee: "—",
+    tradeoff: "—",
+    next: "The explainer updates in plain language while each demo runs."
+  }
+};
 
 // ═══ Helpers ═══
 function $(id) { return document.getElementById(id); }
@@ -47,6 +123,48 @@ function heuristic(a, b) {
   return ALLOW_DIAGONALS ? Math.hypot(dx, dy) : dx + dy;
 }
 
+function getTurnPenaltyWeight(algorithmName) {
+  return TURN_PENALTY_BY_ALGORITHM[algorithmName] || 0;
+}
+
+function stepDistance(a, b) {
+  return a.row !== b.row && a.col !== b.col ? Math.SQRT2 : 1;
+}
+
+function computePathMetrics(path, algorithmName) {
+  let moveDistance = 0;
+  let terrainCost = 0;
+  for (let i = 1; i < path.length; i++) {
+    const prev = path[i - 1];
+    const current = path[i];
+    const distance = stepDistance(prev, current);
+    moveDistance += distance;
+    terrainCost += distance * Math.max(0, weights[current.row][current.col] - 1);
+  }
+  const turns = countTurns(path);
+  const turnPenalty = turns * getTurnPenaltyWeight(algorithmName);
+  const totalScore = moveDistance + terrainCost + turnPenalty;
+  return { moveDistance, terrainCost, turnPenalty, totalScore, turns, pathLength: path.length };
+}
+
+function setTeachingPanel(algorithmName, nextStep) {
+  const details = TEACHING_NOTES[algorithmName] || TEACHING_NOTES.None;
+  $("teaching-strategy").textContent = details.strategy;
+  $("teaching-next-step").textContent = nextStep || details.next;
+  $("teaching-guarantee").textContent = details.guarantee;
+  $("teaching-tradeoff").textContent = details.tradeoff;
+}
+
+function setComparisonResults(html) {
+  $("comparison-results").innerHTML = html;
+}
+
+function resetArrayStatus() {
+  $("array-comparisons").textContent = "0";
+  $("array-status").textContent = "Ready";
+  $("array-algo-badge").textContent = "—";
+}
+
 function setTool(name, label) {
   currentTool = name;
   $("current-tool").textContent = label;
@@ -57,9 +175,18 @@ function setTool(name, label) {
   });
 }
 
-function updateStats({ explored = 0, pathLength = 0, pathCost = 0, turns = 0, algorithm = "None" } = {}) {
+function updateStats({ explored = 0, pathLength = 0, moveDistance = 0, terrainCost = 0, turnPenalty = 0, pathCost = 0, turns = 0, algorithm = "None" } = {}) {
+  const placeholder = $("stats-placeholder");
+  const live = $("stats-live");
+  if (placeholder && live && algorithm !== "None") {
+    placeholder.hidden = true;
+    live.hidden = false;
+  }
   $("nodes-explored").textContent = explored;
   $("path-length").textContent = pathLength;
+  $("move-distance").textContent = typeof moveDistance === "number" ? moveDistance.toFixed(2) : moveDistance;
+  $("terrain-cost").textContent = typeof terrainCost === "number" ? terrainCost.toFixed(2) : terrainCost;
+  $("turn-penalty").textContent = typeof turnPenalty === "number" ? turnPenalty.toFixed(2) : turnPenalty;
   $("path-cost").textContent = typeof pathCost === "number" ? pathCost.toFixed(2) : pathCost;
   $("turn-count").textContent = turns;
   $("algorithm-name").textContent = algorithm;
@@ -69,9 +196,12 @@ function updateStats({ explored = 0, pathLength = 0, pathCost = 0, turns = 0, al
 
 function setBusy(busy) {
   isRunning = busy;
-  document.querySelectorAll(".algo-group button").forEach(b => {
+  document.querySelectorAll(".toolbar button, .array-toolbar button").forEach(b => {
+    b.disabled = busy;
     if (busy) b.classList.add("disabled"); else b.classList.remove("disabled");
   });
+  const slider = $("speed-slider");
+  if (slider) slider.disabled = busy;
 }
 
 // ═══ Grid Management ═══
@@ -94,7 +224,8 @@ function resetSearchStates() {
 function clearPathOnly() {
   if (isRunning) return;
   resetSearchStates(); lastPath = []; lastRawPath = [];
-  updateStats(); setStatus("Path cleared."); drawGrid();
+  updateStats(); setStatus("Path cleared."); setTeachingPanel("None"); drawGrid();
+  setComparisonResults('<p class="comparison-empty">No comparison has been run yet.</p>');
 }
 
 // ═══ Weight + Color ═══
@@ -203,12 +334,6 @@ function countTurns(p) {
   }
   return t;
 }
-function computePathCost(p) {
-  let t = 0;
-  for (const n of p) t += weights[n.row][n.col];
-  return t;
-}
-
 async function animateStoredPath(path) {
   resetSearchStates();
   for (const n of path) {
@@ -222,8 +347,18 @@ async function animateFinalPath(cameFrom, current, algoName) {
   const path = rebuildPath(cameFrom, current);
   lastRawPath = [...path]; lastPath = [...path];
   await animateStoredPath(path);
-  const turns = countTurns(path);
-  updateStats({ explored: nodesExploredCount, pathLength: path.length, pathCost: computePathCost(path) + turns * 1.5, turns, algorithm: algoName });
+  const metrics = computePathMetrics(path, algoName);
+  updateStats({
+    explored: nodesExploredCount,
+    pathLength: metrics.pathLength,
+    moveDistance: metrics.moveDistance,
+    terrainCost: metrics.terrainCost,
+    turnPenalty: metrics.turnPenalty,
+    pathCost: metrics.totalScore,
+    turns: metrics.turns,
+    algorithm: algoName
+  });
+  setTeachingPanel(algoName, "A path has been reconstructed from goal back to start using parent links.");
   setStatus(algoName + " finished: path found.");
   setBusy(false);
 }
@@ -237,6 +372,7 @@ async function runGridSearch(mode) {
   setBusy(true); nodesExploredCount = 0;
   currentAlgorithmName = mode;
   setStatus("Running " + mode + "...");
+  setTeachingPanel(mode);
 
   if (mode === "DFS") {
     const stack = [startNode], visited = new Set(), cameFrom = {};
@@ -340,6 +476,7 @@ async function runGridSearch(mode) {
     }
   }
   setStatus(mode + " finished: no path found.");
+  setTeachingPanel(mode, "The frontier has been exhausted, so no valid route exists on the current grid.");
   setBusy(false);
 }
 
@@ -373,12 +510,22 @@ function smoothPath(p) {
 async function optimizePath() {
   if (isRunning || !lastPath.length) { setStatus("Run a search first."); return; }
   setBusy(true); setStatus("Optimizing route...");
+  setTeachingPanel("Weighted A*", "Smoothing removes unnecessary waypoints when there is line of sight between two nodes.");
   let wp = [...lastPath];
   for (let i = 0; i < 4; i++) {
     wp = smoothPath(wp); lastPath = [...wp];
     await animateStoredPath(wp);
-    const turns = countTurns(wp);
-    updateStats({ explored: nodesExploredCount, pathLength: wp.length, pathCost: computePathCost(wp) + turns * 1.5, turns, algorithm: currentAlgorithmName + " + Smooth" });
+    const metrics = computePathMetrics(wp, "Smoothed Path");
+    updateStats({
+      explored: nodesExploredCount,
+      pathLength: metrics.pathLength,
+      moveDistance: metrics.moveDistance,
+      terrainCost: metrics.terrainCost,
+      turnPenalty: metrics.turnPenalty,
+      pathCost: metrics.totalScore,
+      turns: metrics.turns,
+      algorithm: currentAlgorithmName + " + Smooth"
+    });
     await delay(180);
   }
   setStatus("Optimization complete."); setBusy(false);
@@ -447,11 +594,199 @@ function randomWalls(density) {
   drawGrid(); setStatus("Random obstacles generated.");
 }
 
+function setupSimpleDemo() {
+  if (isRunning) return;
+  createGrid();
+  resetSearchStates();
+  drawGrid();
+  updateStats();
+  setTeachingPanel("Weighted A*", "This demo starts with a clean grid so you can watch the route finder without distractions.");
+  setStatus("Simple demo ready. Press Best Route if it does not start automatically.");
+}
+
+async function runSimpleDemo() {
+  if (isRunning) return;
+  setupSimpleDemo();
+  await delay(200);
+  runAStar();
+}
+
+async function runMazeDemo() {
+  if (isRunning) return;
+  createGrid();
+  generateMaze();
+  setTeachingPanel("Weighted A*", "Now the smart route finder has to work around walls instead of going in a straight line.");
+  await delay(200);
+  runAStar();
+}
+
+async function runListSearchDemo() {
+  if (isRunning) return;
+  generateSearchArray();
+  setTeachingPanel("Linear Search", "This demo checks each bar from left to right until it finds the red target value.");
+  await delay(200);
+  runLinearSearch();
+}
+
+function simulateGridAlgorithm(mode) {
+  const algorithmName = mode;
+  let explored = 0;
+
+  if (mode === "DFS") {
+    const stack = [startNode], visited = new Set(), cameFrom = {};
+    while (stack.length) {
+      const cur = stack.pop();
+      const ck = key(cur);
+      if (visited.has(ck)) continue;
+      visited.add(ck);
+      explored++;
+      if (cur.row === goalNode.row && cur.col === goalNode.col) {
+        const path = rebuildPath(cameFrom, cur);
+        return { algorithm: algorithmName, found: true, explored, metrics: computePathMetrics(path, algorithmName) };
+      }
+      for (const nb of getNeighbors(cur).reverse()) {
+        const nk = key(nb);
+        if (!visited.has(nk)) {
+          cameFrom[nk] = cur;
+          stack.push({ row: nb.row, col: nb.col });
+        }
+      }
+    }
+    return { algorithm: algorithmName, found: false, explored };
+  }
+
+  if (mode === "BFS") {
+    const queue = [startNode], visited = new Set([key(startNode)]), cameFrom = {};
+    while (queue.length) {
+      const cur = queue.shift();
+      explored++;
+      if (cur.row === goalNode.row && cur.col === goalNode.col) {
+        const path = rebuildPath(cameFrom, cur);
+        return { algorithm: algorithmName, found: true, explored, metrics: computePathMetrics(path, algorithmName) };
+      }
+      for (const nb of getNeighbors(cur)) {
+        const nk = key(nb);
+        if (!visited.has(nk)) {
+          visited.add(nk);
+          cameFrom[nk] = cur;
+          queue.push({ row: nb.row, col: nb.col });
+        }
+      }
+    }
+    return { algorithm: algorithmName, found: false, explored };
+  }
+
+  if (mode === "UCS") {
+    const openSet = [{ node: startNode, cost: 0 }], visited = new Set(), cameFrom = {}, gScore = { [key(startNode)]: 0 };
+    while (openSet.length) {
+      openSet.sort((a, b) => a.cost - b.cost);
+      const { node: cur } = openSet.shift();
+      const ck = key(cur);
+      if (visited.has(ck)) continue;
+      visited.add(ck);
+      explored++;
+      if (cur.row === goalNode.row && cur.col === goalNode.col) {
+        const path = rebuildPath(cameFrom, cur);
+        return { algorithm: algorithmName, found: true, explored, metrics: computePathMetrics(path, algorithmName) };
+      }
+      for (const nb of getNeighbors(cur)) {
+        const nk = key(nb);
+        const ng = (gScore[ck] || 0) + nb.moveCost;
+        if (!visited.has(nk) && (!(nk in gScore) || ng < gScore[nk])) {
+          gScore[nk] = ng;
+          cameFrom[nk] = cur;
+          openSet.push({ node: { row: nb.row, col: nb.col }, cost: ng });
+        }
+      }
+    }
+    return { algorithm: algorithmName, found: false, explored };
+  }
+
+  if (mode === "Greedy Best-First") {
+    const openSet = [{ node: startNode, h: 0 }], visited = new Set(), cameFrom = {};
+    while (openSet.length) {
+      openSet.sort((a, b) => a.h - b.h);
+      const { node: cur } = openSet.shift();
+      const ck = key(cur);
+      if (visited.has(ck)) continue;
+      visited.add(ck);
+      explored++;
+      if (cur.row === goalNode.row && cur.col === goalNode.col) {
+        const path = rebuildPath(cameFrom, cur);
+        return { algorithm: algorithmName, found: true, explored, metrics: computePathMetrics(path, algorithmName) };
+      }
+      for (const nb of getNeighbors(cur)) {
+        const nk = key(nb);
+        if (!visited.has(nk)) {
+          cameFrom[nk] = cur;
+          openSet.push({ node: { row: nb.row, col: nb.col }, h: heuristic(nb, goalNode) });
+        }
+      }
+    }
+    return { algorithm: algorithmName, found: false, explored };
+  }
+
+  const openSet = [startNode], cameFrom = {}, gScore = {}, fScore = {};
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      gScore[r + "," + c] = Infinity;
+      fScore[r + "," + c] = Infinity;
+    }
+  }
+  gScore[key(startNode)] = 0;
+  fScore[key(startNode)] = heuristic(startNode, goalNode);
+  while (openSet.length) {
+    openSet.sort((a, b) => fScore[key(a)] - fScore[key(b)]);
+    const cur = openSet.shift();
+    explored++;
+    if (cur.row === goalNode.row && cur.col === goalNode.col) {
+      const path = rebuildPath(cameFrom, cur);
+      return { algorithm: algorithmName, found: true, explored, metrics: computePathMetrics(path, algorithmName) };
+    }
+    for (const nb of getNeighbors(cur)) {
+      const prev = cameFrom[key(cur)];
+      let tp = 0;
+      if (prev && (cur.col - prev.col !== nb.col - cur.col || cur.row - prev.row !== nb.row - cur.row)) tp = 0.35;
+      const ng = gScore[key(cur)] + nb.moveCost + tp;
+      if (ng < gScore[key(nb)]) {
+        cameFrom[key(nb)] = { row: cur.row, col: cur.col };
+        gScore[key(nb)] = ng;
+        fScore[key(nb)] = ng + heuristic(nb, goalNode);
+        if (!openSet.some(node => node.row === nb.row && node.col === nb.col)) {
+          openSet.push({ row: nb.row, col: nb.col });
+        }
+      }
+    }
+  }
+  return { algorithm: algorithmName, found: false, explored };
+}
+
 async function compareAlgorithms() {
   if (isRunning) return;
-  setStatus("Comparing DFS then A*...");
-  await runGridSearch("DFS"); await delay(500);
-  await runGridSearch("Weighted A*");
+  const callout = $("compareCallout");
+  if (callout) callout.hidden = false;
+  const modes = ["DFS", "BFS", "UCS", "Greedy Best-First", "Weighted A*"];
+  setStatus("Comparing search strategies...");
+  setTeachingPanel("Weighted A*", "Comparison mode runs each algorithm on the same grid and summarizes cost versus exploration.");
+  const results = modes.map(simulateGridAlgorithm);
+  const foundResults = results.filter(result => result.found);
+  const bestScore = foundResults.length ? Math.min(...foundResults.map(result => result.metrics.totalScore)) : null;
+  const fewestExplored = foundResults.length ? Math.min(...foundResults.map(result => result.explored)) : null;
+  const rows = results.map(result => {
+    if (!result.found) {
+      return `<tr><td>${result.algorithm}</td><td class="warn">No path</td><td>—</td><td>—</td><td>—</td><td>Blocked by current maze layout.</td></tr>`;
+    }
+    const scoreClass = result.metrics.totalScore === bestScore ? "best" : "";
+    const exploredClass = result.explored === fewestExplored ? "best" : "";
+    const note = result.metrics.totalScore === bestScore
+      ? "Best score on this map."
+      : result.explored === fewestExplored
+        ? "Explored the fewest nodes."
+        : "Alternative tradeoff.";
+    return `<tr><td>${result.algorithm}</td><td>Path found</td><td class="${exploredClass}">${result.explored}</td><td>${result.metrics.moveDistance.toFixed(2)}</td><td class="${scoreClass}">${result.metrics.totalScore.toFixed(2)}</td><td>${note}</td></tr>`;
+  }).join("");
+  setComparisonResults(`<p class="comparison-caption">Same grid, same start and goal, different search policies.</p><table class="comparison-table"><thead><tr><th>Algorithm</th><th>Result</th><th>Explored</th><th>Distance</th><th>Score</th><th>Takeaway</th></tr></thead><tbody>${rows}</tbody></table>`);
+  setStatus("Comparison complete.");
 }
 
 // Shortcut wrappers
@@ -465,7 +800,7 @@ function runGreedy() { runGridSearch("Greedy Best-First"); }
 // 1D ARRAY SEARCH VISUALIZATIONS
 // ═══════════════════════════════════════════════════════════
 
-let arrayCanvas, actx, searchArray = [], searchTarget = -1;
+let arrayCanvas, actx;
 
 function initArrayCanvas() {
   arrayCanvas = $("arrayCanvas");
@@ -475,9 +810,12 @@ function initArrayCanvas() {
 }
 
 function generateSearchArray() {
-  searchArray = Array.from({ length: 32 }, () => Math.floor(Math.random() * 95) + 5);
-  searchTarget = searchArray[Math.floor(Math.random() * searchArray.length)];
+  baseSearchArray = Array.from({ length: 32 }, () => Math.floor(Math.random() * 95) + 5);
+  arrayView = [...baseSearchArray];
+  searchTarget = baseSearchArray[Math.floor(Math.random() * baseSearchArray.length)];
   $("search-target").textContent = searchTarget;
+  resetArrayStatus();
+  setTeachingPanel("Linear Search", "The red line marks the number we want to find in the list below.");
   drawArray();
 }
 
@@ -486,9 +824,9 @@ function drawArray(highlights) {
   highlights = highlights || {};
   const W = arrayCanvas.width, H = arrayCanvas.height;
   actx.clearRect(0, 0, W, H);
-  const n = searchArray.length, barW = (W - 20) / n, maxVal = 100;
+  const n = arrayView.length, barW = (W - 20) / n, maxVal = 100;
   for (let i = 0; i < n; i++) {
-    const barH = (searchArray[i] / maxVal) * (H - 50);
+    const barH = (arrayView[i] / maxVal) * (H - 50);
     const x = 10 + i * barW, y = H - 20 - barH;
     if (highlights.found === i) actx.fillStyle = "#22c55e";
     else if (highlights.checking === i) actx.fillStyle = "#f59e0b";
@@ -498,7 +836,7 @@ function drawArray(highlights) {
     actx.fillRect(x + 1, y, barW - 2, barH);
     // Value label
     actx.fillStyle = "#cbd5e1"; actx.font = "10px system-ui"; actx.textAlign = "center";
-    actx.fillText(String(searchArray[i]), x + barW / 2, y - 4);
+    actx.fillText(String(arrayView[i]), x + barW / 2, y - 4);
   }
   // Target line
   const targetY = H - 20 - (searchTarget / maxVal) * (H - 50);
@@ -511,53 +849,58 @@ function drawArray(highlights) {
 
 async function runLinearSearch() {
   if (isRunning) return;
+  arrayView = [...baseSearchArray];
+  drawArray();
   setBusy(true); setStatus("Running Linear Search...");
+  setTeachingPanel("Linear Search");
   const badge = $("array-algo-badge");
   if (badge) badge.textContent = "Linear Search";
   let comparisons = 0;
-  for (let i = 0; i < searchArray.length; i++) {
+  for (let i = 0; i < arrayView.length; i++) {
     comparisons++;
     drawArray({ checking: i });
     $("array-comparisons").textContent = comparisons;
     $("array-status").textContent = "Checking index " + i;
     await delay(60);
-    if (searchArray[i] === searchTarget) {
+    if (arrayView[i] === searchTarget) {
       drawArray({ found: i });
       $("array-status").textContent = "Found at index " + i + "!";
       $("array-comparisons").textContent = comparisons;
+      setTeachingPanel("Linear Search", "The target was found after checking each earlier element individually.");
       setStatus("Linear Search: found in " + comparisons + " comparisons.");
       setBusy(false); return;
     }
   }
   $("array-status").textContent = "Not found";
+  setTeachingPanel("Linear Search", "Every element was checked, so the target is not present in the current array.");
   setStatus("Linear Search: not found."); setBusy(false);
 }
 
 async function runBinarySearch() {
   if (isRunning) return;
-  // Sort array for binary search
-  const sorted = [...searchArray].sort((a, b) => a - b);
-  searchArray = sorted;
+  arrayView = [...baseSearchArray].sort((a, b) => a - b);
   drawArray();
   await delay(300);
   setBusy(true); setStatus("Running Binary Search...");
+  setTeachingPanel("Binary Search");
   const badge = $("array-algo-badge");
   if (badge) badge.textContent = "Binary Search";
-  let left = 0, right = searchArray.length - 1, comparisons = 0;
+  let left = 0, right = arrayView.length - 1, comparisons = 0;
   const eliminated = new Set();
   while (left <= right) {
     const mid = Math.floor((left + right) / 2);
     comparisons++;
     drawArray({ checking: mid, left, right, eliminated });
     $("array-comparisons").textContent = comparisons;
-    $("array-status").textContent = "Checking index " + mid + " (value: " + searchArray[mid] + ")";
+    $("array-status").textContent = "Checking index " + mid + " (value: " + arrayView[mid] + ")";
     await delay(120);
-    if (searchArray[mid] === searchTarget) {
+    if (arrayView[mid] === searchTarget) {
       drawArray({ found: mid, eliminated });
       $("array-status").textContent = "Found at index " + mid + "!";
+      setTeachingPanel("Binary Search", "The midpoint matched the target, so the remaining halves never needed to be searched.");
       setStatus("Binary Search: found in " + comparisons + " comparisons.");
       setBusy(false); return;
-    } else if (searchArray[mid] < searchTarget) {
+    } else if (arrayView[mid] < searchTarget) {
       for (let i = left; i <= mid; i++) eliminated.add(i);
       left = mid + 1;
     } else {
@@ -566,6 +909,7 @@ async function runBinarySearch() {
     }
   }
   $("array-status").textContent = "Not found";
+  setTeachingPanel("Binary Search", "The interval collapsed, proving the target is absent from the sorted array.");
   setStatus("Binary Search: not found."); setBusy(false);
 }
 
@@ -771,7 +1115,7 @@ function setLiveMode(next) {
   btn.setAttribute("aria-pressed", String(liveMode));
   const lbl = $("live-label");
   if (lbl) lbl.textContent = "Live: " + (liveMode ? "On" : "Off");
-  setStatus(liveMode ? "Live replanning on." : "Live replanning off.");
+  setStatus(liveMode ? "Live updates are on." : "Live updates are off.");
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -784,6 +1128,11 @@ $("tool-goal").addEventListener("click", () => setTool("goal", "Goal"));
 $("tool-wall").addEventListener("click", () => setTool("wall", "Walls"));
 $("tool-erase").addEventListener("click", () => setTool("erase", "Erase"));
 $("tool-weight").addEventListener("click", () => setTool("weight", "Weight"));
+
+// Beginner demos
+$("demo-best-route").addEventListener("click", () => !isRunning && runSimpleDemo());
+$("demo-maze-run").addEventListener("click", () => !isRunning && runMazeDemo());
+$("demo-list-search").addEventListener("click", () => !isRunning && runListSearchDemo());
 
 // Algorithm buttons
 $("run-astar").addEventListener("click", () => !isRunning && runAStar());
@@ -861,3 +1210,23 @@ setTool("wall", "Walls");
 setLiveMode(false);
 setStatus("Ready");
 initArrayCanvas();
+
+// Onboarding overlay
+(function initOnboarding() {
+  if (sessionStorage.getItem("labVisited")) return;
+  const overlay = $("onboarding-overlay");
+  if (!overlay) return;
+  overlay.hidden = false;
+  function dismiss() {
+    overlay.hidden = true;
+    sessionStorage.setItem("labVisited", "1");
+  }
+  $("onboarding-start").addEventListener("click", dismiss);
+  $("onboarding-skip").addEventListener("click", dismiss);
+  window.addEventListener("keydown", function onEsc(e) {
+    if (e.key === "Escape" && !overlay.hidden) {
+      dismiss();
+      window.removeEventListener("keydown", onEsc);
+    }
+  });
+})();
