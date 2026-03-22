@@ -8,7 +8,7 @@ const gradientCanvas = document.getElementById("gradientCanvas");
 const gctx = gradientCanvas.getContext("2d");
 
 // ═══ Grid Config ═══
-const rows = 20, cols = 26, cellSize = 30;
+const rows = 15, cols = 20, cellSize = 28;
 const EMPTY = 0, WALL = 1, START = 2, GOAL = 3, OPEN = 4, CLOSED = 5, PATH = 6, ROBOT = 7;
 const ALLOW_DIAGONALS = true;
 
@@ -20,7 +20,7 @@ const colors = {
 // ═══ State ═══
 let grid = [], weights = [];
 let currentTool = "wall";
-let startNode = { row: 2, col: 2 }, goalNode = { row: 16, col: 21 };
+let startNode = { row: 2, col: 2 }, goalNode = { row: 12, col: 17 };
 let isRunning = false, isMouseDown = false, liveMode = false;
 let lastPath = [], lastRawPath = [];
 let nodesExploredCount = 0, currentAlgorithmName = "None";
