@@ -572,6 +572,9 @@ button.is-running::after {
   grid-template-columns: 1fr;
   gap: 14px;
   margin-bottom: 18px;
+  max-width: 820px;
+  margin-left: auto;
+  margin-right: auto;
 }
 .canvas-card {
   background: var(--panel);
@@ -579,6 +582,8 @@ button.is-running::after {
   border-radius: var(--radius);
   padding: 12px;
   box-shadow: var(--shadow);
+  max-width: 820px;
+  margin: 0 auto;
 }
 .canvas-header {
   display: flex;
